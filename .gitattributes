@@ -1,0 +1,16 @@
+main/resources/GTFS/DELIJN/stop_times.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/DELIJN/trips.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/DELIJN/routes.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/DELIJN/stops.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/SNCB/stop_times.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/SNCB/trips.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/SNCB/routes.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/SNCB/stops.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/STIB/stop_times.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/STIB/trips.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/STIB/routes.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/STIB/stops.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/TEC/stop_times.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/TEC/trips.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/TEC/routes.csv filter=lfs diff=lfs merge=lfs -text
+main/resources/GTFS/TEC/stops.csv filter=lfs diff=lfs merge=lfs -text
