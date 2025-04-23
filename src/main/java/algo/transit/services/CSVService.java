@@ -22,7 +22,6 @@ import java.util.Map;
 
 /**
  * Service class for handling CSV files related to transit data.
- * Provides methods to read and process routes, stops, trips, and stop times.
  */
 public class CSVService {
     private final Path[] routesPaths, stopTimesPaths, stopsPaths, tripsPaths;
@@ -46,7 +45,7 @@ public class CSVService {
         this.tripsPaths = tripsPaths;
     }
 
-    // Default file paths for various GTFS data files
+    // Default file paths
     private static final Path[] DefaultRoutesPaths = new Path[]{
             Path.of("src", "main", "resources", "GTFS", "DELIJN", "routes.csv"),
             Path.of("src", "main", "resources", "GTFS", "SNCB", "routes.csv"),
@@ -149,11 +148,6 @@ public class CSVService {
         }
     }
 
-    /**
-     * Reads and processes route data from the CSV files.
-     *
-     * @return A map of route IDs to Route objects.
-     */
     public Map<String, Route> getRoutes() {
         Map<String, Route> routes = new HashMap<>();
         for (Path path : routesPaths)
@@ -162,11 +156,6 @@ public class CSVService {
         return routes;
     }
 
-    /**
-     * Reads and processes stop data from the CSV files.
-     *
-     * @return A map of stop IDs to Stop objects.
-     */
     public Map<String, Stop> getStops() {
         Map<String, Stop> stops = new HashMap<>();
         for (Path path : stopsPaths)
@@ -210,12 +199,6 @@ public class CSVService {
         }
     }
 
-    /**
-     * Reads and processes trip data from the CSV files.
-     *
-     * @param routes A map of route IDs to Route objects.
-     * @return A map of trip IDs to Trip objects.
-     */
     public Map<String, Trip> getTrips(Map<String, Route> routes) {
         Map<String, Trip> trips = new HashMap<>();
         for (Path path : tripsPaths)
@@ -224,12 +207,6 @@ public class CSVService {
         return trips;
     }
 
-    /**
-     * Removes unused stops that are not associated with any routes.
-     *
-     * @param stops A map of stop IDs to Stop objects.
-     * @return The number of stops removed.
-     */
     public int cleanupUnusedStops(Map<String, Stop> stops) {
         List<String> badStops = new ArrayList<>();
         for (Map.Entry<String, Stop> entry : stops.entrySet()) {
@@ -257,17 +234,17 @@ public class CSVService {
 
         if (hour > 23) {
             hour %= 24;
-            // day += 1;
+            // TODO: day += 1;
         }
 
         if (minute > 59) {
             minute %= 60;
-            // hour += 1;
+            // TODO: hour += 1;     // shouldn't ever happen
         }
 
         if (second > 59) {
             second %= 60;
-            // minute += 1;
+            // TODO: minute += 1;   // shouldn't ever happen
         }
 
         return LocalTime.of(hour, minute, second);
