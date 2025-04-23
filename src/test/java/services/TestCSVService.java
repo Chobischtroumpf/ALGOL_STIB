@@ -1,7 +1,7 @@
 package services;
 
-import algo.transports.models.Stop;
-import algo.transports.services.CSVService;
+import algo.transit.models.Stop;
+import algo.transit.services.CSVService;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
