@@ -1,26 +1,33 @@
 package algo.transports.models;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Trip {
     private final String    tripId;
-    private final String    routeId;
     private Route           route; // Not required
-    private Map<Integer, StopTime> stopTimes;
+    private Map<Integer, Pair<LocalTime, Stop>> stops;
 
-    public Trip(String tripId, String routeId) {
+    public Trip(String tripId, Route route) {
         this.tripId     = tripId;
-        this.routeId    = routeId;
-        this.stopTimes  = new HashMap<>();
+        this.route      = route;
+        this.stops  = new HashMap<>();
+    }
+
+    @Override
+    public String toString() {
+        return "Trip{" +
+                "tripId='" + tripId + '\'' +
+                ", route=" + route +
+                ", stops=" + stops.values() +
+                '}';
     }
 
     public String getTripId() {
         return tripId;
-    }
-
-    public String getRouteId() {
-        return routeId;
     }
 
     public Route getRoute() throws NullPointerException {
@@ -34,28 +41,24 @@ public class Trip {
         this.route = route;
     }
 
-    public Map<Integer, StopTime> getStopTimes() throws NullPointerException {
-        if (stopTimes == null) {
+    public Map<Integer, Pair<LocalTime, Stop>> getStops() throws NullPointerException {
+        if (stops == null) {
             throw new NullPointerException("Stop times are not set");
         }
-        return stopTimes;
+        return stops;
     }
 
-    public void setStopTimes(Map<Integer, StopTime> stopTimes) {
-        this.stopTimes = stopTimes;
-    }
-
-    public StopTime getStopTime(int stopSequence) throws NullPointerException {
-        if (stopTimes == null) {
+    public Pair<LocalTime, Stop> getStopTime(int stopSequence) throws NullPointerException {
+        if (stops == null) {
             throw new NullPointerException("Stop times are not set");
         }
-        return stopTimes.get(stopSequence);
+        return stops.get(stopSequence);
     }
 
-    public void addStopTime(int stopSequence, StopTime stopTime) {
-        if (stopTimes == null) {
-            throw new NullPointerException("Stop times are not set");
+    public void addStopTime(int stopSequence, Pair<LocalTime, Stop> stop) {
+        if (stops == null) {
+            stops = new HashMap<>();
         }
-        stopTimes.put(stopSequence, stopTime);
+        stops.put(stopSequence, stop);
     }
 }

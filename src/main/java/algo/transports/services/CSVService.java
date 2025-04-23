@@ -2,13 +2,12 @@ package algo.transports.services;
 
 import algo.transports.models.Route;
 import algo.transports.models.Stop;
-import algo.transports.models.StopTime;
 import algo.transports.models.Trip;
 import algo.transports.repositories.CSVRepository;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.nio.file.Path;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,31 +92,42 @@ public class CSVService {
         return stops;
     }
 
-    public Map<String, List<StopTime>> getStopTimes() {
-        Map<String, List<StopTime>> stopTimes = new HashMap<>();
+    public void setStopTimes(Map<String, Stop> stops, Map<String, Trip> trips) {
 
         for (Path path : stopTimesPaths) {
             List<String[]> data = CSVRepository.readCSV(path);
             if (data != null) {
                 for (String[] row : data) {
-                    row[1] = checkTime(row[1]);
                     String tripId = row[0];
-                    StopTime stopTime = new StopTime(tripId, LocalTime.parse(row[1]), row[2], Integer.parseInt(row[3]));
-                    stopTimes.computeIfAbsent(tripId, _ -> new ArrayList<>()).add(stopTime);
+                    String stopId = row[2];
+                    String departureTime = checkTime(row[1]);
+                    int stopSequence = Integer.parseInt(row[3]);
+
+                    Stop stop = stops.get(stopId);
+                    Trip trip = trips.get(tripId);
+                    if (stop == null) {
+                        System.out.println("Stop not found: " + stopId);
+                    }
+                    if (trip == null) {
+                        System.out.println("Trip not found: " + tripId);
+                    }
+                    if (stop != null && trip != null) {
+                        trip.addStopTime(stopSequence, new ImmutablePair<>(LocalTime.parse(departureTime), stop));
+
+                        stop.addRoute(trip.getRoute());
+                    }
                 }
             }
         }
-
-        return stopTimes;
     }
 
-    public Map<String, Trip> getTrips() {
+    public Map<String, Trip> getTrips(Map<String, Route> routes) {
         Map<String, Trip> trips = new HashMap<>();
         for (Path path : tripsPaths) {
             List<String[]> data = CSVRepository.readCSV(path);
             if (data != null) {
                 for (String[] row : data) {
-                    Trip trip = new Trip(row[0], row[1]);
+                    Trip trip = new Trip(row[0], routes.get(row[1]));
                     trips.put(row[0], trip);
                 }
             }
