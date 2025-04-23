@@ -14,6 +14,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 public class TestDataAnalyzerService {
@@ -31,7 +32,7 @@ public class TestDataAnalyzerService {
         CSVService csvService = new CSVService(new Path[]{routesPath}, new Path[]{stopTimesPath}, new Path[]{stopsPath}, new Path[]{tripPath});
         Map<String, Route> routes = csvService.getRoutes();
         Map<String, Stop> stops = csvService.getStops();
-        Map<String, StopTime> stopTimes = csvService.getStopTimes();
+        Map<String, List<StopTime>> stopTimes = csvService.getStopTimes();
         Map<String, Trip> trips = csvService.getTrips();
 
         // Call the method to format CSV data
@@ -51,9 +52,9 @@ public class TestDataAnalyzerService {
         Writer writer = new FileWriter(file, true);
         writer.write("Trip ID: " + trip.getTripId() + "\n");
         writer.write("Route ID: " + trip.getRouteId() + "\n");
-        writer.write("Route Short Name: " + trip.getRoute().getRouteShortName() + "\n");
-        writer.write("Route Long Name: " + trip.getRoute().getRouteLongName() + "\n");
-        writer.write("Route Type: " + trip.getRoute().getRouteType() + "\n");
+        writer.write("Route Short Name: " + trip.getRoute().getShortName() + "\n");
+        writer.write("Route Long Name: " + trip.getRoute().getLongName() + "\n");
+        writer.write("Route Type: " + trip.getRoute().getType() + "\n");
         writer.write("Trip Stop Times: \n");
         for (Map.Entry<Integer, StopTime> stopTimeEntry : trip.getStopTimes().entrySet()) {
             StopTime stopTime = stopTimeEntry.getValue();

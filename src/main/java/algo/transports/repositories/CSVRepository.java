@@ -1,11 +1,10 @@
 package algo.transports.repositories;
 
 import com.opencsv.CSVReader;
-import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
 
+import java.io.BufferedReader;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -17,9 +16,9 @@ public class CSVRepository {
 
     // Method to read a CSV file and return a list of string arrays
     public static List<String[]> readCSV(Path filePath) {
-        try (CSVReader reader = new CSVReader(new FileReader(filePath.toString()))) {
+        try (CSVReader reader = new CSVReader(new BufferedReader(new FileReader(filePath.toString()), 8192 * 16))) {
             List<String[]> data = reader.readAll();
-            data.remove(0); // Remove the header row
+            data.removeFirst();
             return data;
         } catch (IOException | CsvException e) {
             System.err.println("Error reading CSV file: " + e.getMessage());

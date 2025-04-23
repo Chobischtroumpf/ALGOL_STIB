@@ -1,35 +1,31 @@
 package algo.transports.models;
 
 public class Stop {
-    String stop_id;
-    String stop_name;
-    double stop_lat;
-    double stop_lon;
+    private final String stopId;
+    private final String name;
+    private final double latitude;
+    private final double longitude;
 
-    public Stop(String stop_id, String stop_name, double stop_lat, double stop_lon) {
-        this.stop_id = stop_id;
-        this.stop_name = stop_name;
-        this.stop_lat = stop_lat;
-        this.stop_lon = stop_lon;
+    public Stop(String stopId, String name, double latitude, double longitude) {
+        this.stopId     = stopId;
+        this.name       = name;
+        this.latitude   = latitude;
+        this.longitude  = longitude;
     }
 
-    public String getId()
-    {
-        return stop_id;
+    public String getId() {
+        return stopId;
     }
 
-    public String getName()
-    {
-        return stop_name;
+    public String getName() {
+        return name;
     }
 
-    public double getLat()
-    {
-        return stop_lat;
+    public double getLat() {
+        return latitude;
     }
 
-    public double getLon()
-    {
-        return stop_lon;
+    public double getLon() {
+        return longitude;
     }
 }

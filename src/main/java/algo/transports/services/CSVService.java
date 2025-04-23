@@ -1,12 +1,12 @@
 package algo.transports.services;
 
-import java.nio.file.Path;
 import algo.transports.models.Route;
 import algo.transports.models.Stop;
 import algo.transports.models.StopTime;
 import algo.transports.models.Trip;
 import algo.transports.repositories.CSVRepository;
 
+import java.nio.file.Path;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,96 +14,115 @@ import java.util.List;
 import java.util.Map;
 
 public class CSVService {
-    Path[] routes_paths;
-    Path[] stop_times_paths;
-    Path[] stops_paths;
-    Path[] trips_paths;
+    Path[] routesPaths;
+    Path[] stopTimesPaths;
+    Path[] stopsPaths;
+    Path[] tripsPaths;
 
-    public CSVService(){
-        this.routes_paths = new Path[4];
-        this.stop_times_paths = new Path[4];
-        this.stops_paths = new Path[4];
-        this.trips_paths = new Path[4];
+    public CSVService() {
+        this.routesPaths = new Path[4];
+        this.stopTimesPaths = new Path[4];
+        this.stopsPaths = new Path[4];
+        this.tripsPaths = new Path[4];
         initRoutesPaths();
         initStopTimesPaths();
         initStopsPaths();
         initTripsPaths();
     }
 
-    public CSVService(Path[] routes_paths, Path[] stop_times_paths, Path[] stops_paths, Path[] trips_paths) {
-        this.routes_paths = routes_paths;
-        this.stop_times_paths = stop_times_paths;
-        this.stops_paths = stops_paths;
-        this.trips_paths = trips_paths;
+    public CSVService(Path[] routesPaths, Path[] stopTimesPaths, Path[] stopsPaths, Path[] tripsPaths) {
+        this.routesPaths = routesPaths;
+        this.stopTimesPaths = stopTimesPaths;
+        this.stopsPaths = stopsPaths;
+        this.tripsPaths = tripsPaths;
     }
 
     private void initRoutesPaths() {
-        routes_paths[0] = Path.of("src", "main", "resources", "GTFS", "DELIJN", "routes.csv");
-        routes_paths[1] = Path.of("src", "main", "resources", "GTFS", "SNCB", "routes.csv");
-        routes_paths[2] = Path.of("src", "main", "resources", "GTFS", "TEC", "routes.csv");
-        routes_paths[3] = Path.of("src", "main", "resources", "GTFS", "STIB", "routes.csv");
+        routesPaths[0] = Path.of("src", "main", "resources", "GTFS", "DELIJN", "routes.csv");
+        routesPaths[1] = Path.of("src", "main", "resources", "GTFS", "SNCB", "routes.csv");
+        routesPaths[2] = Path.of("src", "main", "resources", "GTFS", "TEC", "routes.csv");
+        routesPaths[3] = Path.of("src", "main", "resources", "GTFS", "STIB", "routes.csv");
     }
 
     private void initStopTimesPaths() {
-        stop_times_paths[0] = Path.of("src", "main", "resources", "GTFS", "DELIJN", "stop_times.csv");
-        stop_times_paths[1] = Path.of("src", "main", "resources", "GTFS", "SNCB", "stop_times.csv");
-        stop_times_paths[2] = Path.of("src", "main", "resources", "GTFS", "TEC", "stop_times.csv");
-        stop_times_paths[3] = Path.of("src", "main", "resources", "GTFS", "STIB", "stop_times.csv");
+        stopTimesPaths[0] = Path.of("src", "main", "resources", "GTFS", "DELIJN", "stop_times.csv");
+        stopTimesPaths[1] = Path.of("src", "main", "resources", "GTFS", "SNCB", "stop_times.csv");
+        stopTimesPaths[2] = Path.of("src", "main", "resources", "GTFS", "TEC", "stop_times.csv");
+        stopTimesPaths[3] = Path.of("src", "main", "resources", "GTFS", "STIB", "stop_times.csv");
     }
 
     private void initStopsPaths() {
-        stops_paths[0] = Path.of("src", "main", "resources", "GTFS", "DELIJN", "stops.csv");
-        stops_paths[1] = Path.of("src", "main", "resources", "GTFS", "SNCB", "stops.csv");
-        stops_paths[2] = Path.of("src", "main", "resources", "GTFS", "TEC", "stops.csv");
-        stops_paths[3] = Path.of("src", "main", "resources", "GTFS", "STIB", "stops.csv");
+        stopsPaths[0] = Path.of("src", "main", "resources", "GTFS", "DELIJN", "stops.csv");
+        stopsPaths[1] = Path.of("src", "main", "resources", "GTFS", "SNCB", "stops.csv");
+        stopsPaths[2] = Path.of("src", "main", "resources", "GTFS", "TEC", "stops.csv");
+        stopsPaths[3] = Path.of("src", "main", "resources", "GTFS", "STIB", "stops.csv");
     }
 
     private void initTripsPaths() {
-        trips_paths[0] = Path.of("src", "main", "resources", "GTFS", "DELIJN", "trips.csv");
-        trips_paths[1] = Path.of("src", "main", "resources", "GTFS", "SNCB", "trips.csv");
-        trips_paths[2] = Path.of("src", "main", "resources", "GTFS", "TEC", "trips.csv");
-        trips_paths[3] = Path.of("src", "main", "resources", "GTFS", "STIB", "trips.csv");
+        tripsPaths[0] = Path.of("src", "main", "resources", "GTFS", "DELIJN", "trips.csv");
+        tripsPaths[1] = Path.of("src", "main", "resources", "GTFS", "SNCB", "trips.csv");
+        tripsPaths[2] = Path.of("src", "main", "resources", "GTFS", "TEC", "trips.csv");
+        tripsPaths[3] = Path.of("src", "main", "resources", "GTFS", "STIB", "trips.csv");
     }
 
     public Map<String, Route> getRoutes() {
         Map<String, Route> routes = new HashMap<>();
-        for (Path path : routes_paths) {
+        for (Path path : routesPaths) {
             List<String[]> data = CSVRepository.readCSV(path);
-            assert data != null;
-            for (String[] row : data) {
-                Route route = new Route(row[0], row[1], row[2], row[3]);
-                routes.put(row[0], route);
+            if (data != null) {
+                for (String[] row : data) {
+                    Route route = new Route(row[0], row[1], row[2], row[3]);
+                    routes.put(row[0], route);
+                }
             }
         }
         return routes;
     }
 
-    public Map<String,Stop> getStops() {
+    public Map<String, Stop> getStops() {
         Map<String, Stop> stops = new HashMap<>();
-        for (Path path : stops_paths) {
+        for (Path path : stopsPaths) {
             List<String[]> data = CSVRepository.readCSV(path);
-            assert data != null;
-            for (String[] row : data) {
-                Stop stop = new Stop(row[0], row[1], Double.parseDouble(row[2]), Double.parseDouble(row[3]));
-                stops.put(row[0], stop);
+            if (data != null) {
+                for (String[] row : data) {
+                    Stop stop = new Stop(row[0], row[1], Double.parseDouble(row[2]), Double.parseDouble(row[3]));
+                    stops.put(row[0], stop);
+                }
             }
         }
         return stops;
     }
 
-    public Map<String, StopTime> getStopTimes() {
-        Map<String, StopTime> stopTimes = new HashMap<>();
-        for (Path path : stop_times_paths) {
-            List<String[]> data = CSVRepository.readCSV(path);
-            assert data != null;
-            for (String[] row : data) {
-                row[1] = checkTime(row[1]);
+    public Map<String, List<StopTime>> getStopTimes() {
+        Map<String, List<StopTime>> stopTimes = new HashMap<>();
 
-                StopTime stopTime = new StopTime(row[0], LocalTime.parse(row[1]), row[2], Integer.parseInt(row[3]));
-                stopTimes.put(row[0], stopTime);
+        for (Path path : stopTimesPaths) {
+            List<String[]> data = CSVRepository.readCSV(path);
+            if (data != null) {
+                for (String[] row : data) {
+                    row[1] = checkTime(row[1]);
+                    String tripId = row[0];
+                    StopTime stopTime = new StopTime(tripId, LocalTime.parse(row[1]), row[2], Integer.parseInt(row[3]));
+                    stopTimes.computeIfAbsent(tripId, _ -> new ArrayList<>()).add(stopTime);
+                }
             }
         }
+
         return stopTimes;
+    }
+
+    public Map<String, Trip> getTrips() {
+        Map<String, Trip> trips = new HashMap<>();
+        for (Path path : tripsPaths) {
+            List<String[]> data = CSVRepository.readCSV(path);
+            if (data != null) {
+                for (String[] row : data) {
+                    Trip trip = new Trip(row[0], row[1]);
+                    trips.put(row[0], trip);
+                }
+            }
+        }
+        return trips;
     }
 
     private String checkTime(String time) {
@@ -136,24 +155,10 @@ public class CSVService {
         if (minute.length() == 1) {
             minute = "0" + minute;
         }
-        if (second.length() == 1){
+        if (second.length() == 1) {
             second = "0" + second;
         }
 
         return (hour + ":" + minute + ":" + second);
     }
-
-    public Map<String, Trip> getTrips() {
-        Map<String, Trip> trips = new HashMap<>();
-        for (Path path : trips_paths) {
-            List<String[]> data = CSVRepository.readCSV(path);
-            assert data != null;
-            for (String[] row : data) {
-                Trip trip = new Trip(row[0], row[1]);
-                trips.put(row[0], trip);
-            }
-        }
-        return trips;
-    }
-
 }

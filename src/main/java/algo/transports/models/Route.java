@@ -5,72 +5,41 @@ import algo.transports.enums.TransportType;
 import java.util.Objects;
 
 public class Route {
-    private String routeId;
-    private String routeShortName;
-    private String routeLongName;
-    private TransportType routeType;
+    private final String        routeId;
+    private final String        shortName;
+    private final String        longName;
+    private final TransportType type;
 
-    public Route() {
-        // Default
-    }
-
-    public Route(String routeID, String routeShortName, String routeLongName, TransportType routeType) {
-        this.routeId = routeID;
-        this.routeShortName = routeShortName;
-        this.routeLongName = routeLongName;
-        this.routeType = routeType;
-    }
-
-    public Route(String routeID, String routeShortName, String routeLongName, String routeTypeStr) {
-        this.routeId = routeID;
-        this.routeShortName = routeShortName;
-        this.routeLongName = routeLongName;
-        this.routeType = TransportType.fromString(routeTypeStr);
+    public Route(String routeID, String shortName, String longName, String typeStr) {
+        this.routeId    = routeID;
+        this.shortName  = shortName;
+        this.longName   = longName;
+        this.type       = TransportType.fromString(typeStr);
     }
 
     public String getRouteID() {
         return routeId;
     }
 
-    public void setRouteID(String routeID) {
-        this.routeId = routeID;
+    public String getShortName() {
+        return shortName;
     }
 
-    public String getRouteShortName() {
-        return routeShortName;
+    public String getLongName() {
+        return longName;
     }
 
-    public void setRouteShortName(String routeShortName) {
-        this.routeShortName = routeShortName;
-    }
-
-    public String getRouteLongName() {
-        return routeLongName;
-    }
-
-    public void setRouteLongName(String routeLongName) {
-        this.routeLongName = routeLongName;
-    }
-
-    public TransportType getRouteType() {
-        return routeType;
-    }
-
-    public void setRouteType(TransportType routeType) {
-        this.routeType = routeType;
-    }
-
-    public void setRouteType(String routeTypeStr) {
-        this.routeType = TransportType.fromString(routeTypeStr);
+    public TransportType getType() {
+        return type;
     }
 
     @Override
     public String toString() {
         return "Route{" +
                 "routeID='" + routeId + '\'' +
-                ", routeShortName='" + routeShortName + '\'' +
-                ", routeLongName='" + routeLongName + '\'' +
-                ", routeType=" + routeType +
+                ", routeShortName='" + shortName + '\'' +
+                ", routeLongName='" + longName + '\'' +
+                ", routeType=" + type +
                 '}';
     }
 
