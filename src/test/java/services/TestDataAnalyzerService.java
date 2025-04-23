@@ -6,7 +6,6 @@ import algo.transports.models.StopTime;
 import algo.transports.models.Trip;
 import algo.transports.services.CSVService;
 import algo.transports.services.DataAnalyzerService;
-
 import org.junit.jupiter.api.Test;
 
 import java.io.File;

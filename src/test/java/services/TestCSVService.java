@@ -2,13 +2,10 @@ package services;
 
 import algo.transports.models.Stop;
 import algo.transports.services.CSVService;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class TestCSVService {
 
@@ -29,6 +26,5 @@ public class TestCSVService {
         assert !temp.isEmpty() : "The list of stops should not be empty";
         // Check if the first element is of type Stop
         assert temp.get("STIB-0089") != null : "The first stop should be of type Stop";
-
     }
 }

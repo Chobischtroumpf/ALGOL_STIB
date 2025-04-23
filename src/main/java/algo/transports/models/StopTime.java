@@ -35,6 +35,13 @@ public class StopTime {
         return stopSequence;
     }
 
+    public Stop getStop() {
+        if (stop == null) {
+            throw new NullPointerException("Stop is not set");
+        }
+        return stop;
+    }
+
     public void setStop(Stop stop) {
         this.stop = stop;
     }
