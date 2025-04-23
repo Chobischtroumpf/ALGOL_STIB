@@ -3,18 +3,20 @@ package algo.transports.models;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Trip {
-    private final String    tripId;
-    private Route           route; // Not required
+    private final String tripId;
+    private Route route; // Not required
     private Map<Integer, Pair<LocalTime, Stop>> stops;
 
     public Trip(String tripId, Route route) {
-        this.tripId     = tripId;
-        this.route      = route;
-        this.stops      = new HashMap<>();
+        this.tripId = tripId;
+        this.route = route;
+        this.stops = new HashMap<>();
     }
 
     @Override
@@ -60,5 +62,13 @@ public class Trip {
             stops = new HashMap<>();
         }
         stops.put(stopSequence, stop);
+    }
+
+    public List<Map.Entry<Integer, Pair<LocalTime, Stop>>> getOrderedStopTimes() {
+        List<Map.Entry<Integer, Pair<LocalTime, Stop>>> orderedStops =
+                new ArrayList<>(stops.entrySet());
+
+        orderedStops.sort(Map.Entry.comparingByKey());
+        return orderedStops;
     }
 }
