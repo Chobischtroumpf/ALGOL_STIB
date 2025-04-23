@@ -1,6 +1,6 @@
 package algo.transit.controllers;
 
-import algo.transit.graph.PathSegment;
+import algo.transit.models.graph.PathSegment;
 import algo.transit.models.Route;
 import algo.transit.models.Stop;
 import algo.transit.models.Trip;

@@ -1,10 +1,11 @@
 package controllers;
 
 import algo.transit.controllers.GraphController;
-import algo.transit.graph.PathSegment;
+import algo.transit.models.graph.PathSegment;
 import algo.transit.models.Route;
 import algo.transit.models.Stop;
 import algo.transit.models.Trip;
+import algo.transit.models.graph.Edge;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -119,8 +120,8 @@ public class TestGraphController {
         // Use reflection to access the private adjacencyList field
         Field adjacencyListField = GraphController.class.getDeclaredField("adjacencyList");
         adjacencyListField.setAccessible(true);
-        Map<Stop, List<algo.transit.graph.Edge>> adjacencyList =
-                (Map<Stop, List<algo.transit.graph.Edge>>) adjacencyListField.get(graphController);
+        Map<Stop, List<Edge>> adjacencyList =
+                (Map<Stop, List<Edge>>) adjacencyListField.get(graphController);
 
         // Verify each stop has an entry in the adjacency list
         for (Stop stop : stops.values()) {
@@ -136,7 +137,7 @@ public class TestGraphController {
         Stop stop1 = stops.get("STOP1");
         boolean hasEdgeToStop2 = false;
 
-        for (algo.transit.graph.Edge edge : adjacencyList.get(stop1)) {
+        for (Edge edge : adjacencyList.get(stop1)) {
             if (edge.getTo().equals(stops.get("STOP2"))) {
                 hasEdgeToStop2 = true;
                 break;

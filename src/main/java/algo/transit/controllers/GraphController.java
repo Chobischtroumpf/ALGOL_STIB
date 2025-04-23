@@ -1,14 +1,10 @@
 package algo.transit.controllers;
 
 import algo.transit.enums.TransportType;
-import algo.transit.graph.Edge;
-import algo.transit.graph.PathSegment;
-import algo.transit.graph.SpatialIndex;
-import algo.transit.graph.TransitEdge;
-import algo.transit.graph.WalkingEdge;
 import algo.transit.models.Route;
 import algo.transit.models.Stop;
 import algo.transit.models.Trip;
+import algo.transit.models.graph.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
@@ -107,8 +103,8 @@ public class GraphController {
         double dLat = lat2 - lat1;
         double dLon = lon2 - lon1;
 
-        double a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2) * Math.sin(dLon/2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return EARTH_RADIUS * c;
     }

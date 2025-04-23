@@ -1,4 +1,4 @@
-package algo.transit.graph;
+package algo.transit.models.graph;
 
 import algo.transit.enums.TransportType;
 import algo.transit.models.Route;
