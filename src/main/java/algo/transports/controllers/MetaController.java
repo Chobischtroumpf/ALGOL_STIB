@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.Map;
 
 public class MetaController {
-    Map<String, Route> routes;
-    Map<String, Stop> stops;
-    Map<String, Trip> trips;
+    Map<String, Route>  routes;
+    Map<String, Stop>   stops;
+    Map<String, Trip>   trips;
 
     public MetaController() {
         CSVService csvService = new CSVService();

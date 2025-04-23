@@ -9,14 +9,14 @@ import java.util.List;
 import java.util.Map;
 
 public class Trip {
-    private final String tripId;
-    private Route route; // Not required
+    private final String    tripId;
+    private Route           route; // Not required
     private Map<Integer, Pair<LocalTime, Stop>> stops;
 
     public Trip(String tripId, Route route) {
         this.tripId = tripId;
-        this.route = route;
-        this.stops = new HashMap<>();
+        this.route  = route;
+        this.stops  = new HashMap<>();
     }
 
     @Override
