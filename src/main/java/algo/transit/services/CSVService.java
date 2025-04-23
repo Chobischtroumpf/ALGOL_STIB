@@ -13,8 +13,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 
@@ -156,6 +158,18 @@ public class CSVService {
             for (Trip trip : readCSV(path, row -> new Trip(row[0], routes.get(row[1]))))
                 trips.put(trip.getId(), trip);
         return trips;
+    }
+
+    public int cleanupUnusedStops(Map<String, Stop> stops) {
+        List<String> badStops = new ArrayList<>();
+        for (Map.Entry<String, Stop> entry : stops.entrySet()) {
+            if (entry.getValue().getRoutes().isEmpty()) badStops.add(entry.getKey());
+        }
+
+        // Remove the unused stops
+        for (String stopId : badStops) stops.remove(stopId);
+
+        return badStops.size();
     }
 
     private static LocalTime checkTime(String time) {

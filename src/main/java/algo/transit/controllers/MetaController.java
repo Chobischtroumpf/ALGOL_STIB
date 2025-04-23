@@ -24,42 +24,31 @@ public class MetaController {
         this.routes = csvService.getRoutes();
         long endTime = System.nanoTime();
         double durationInSeconds = (endTime - startTime) / 1_000_000_000.0;
-        System.out.println("routes: " + routes.size() + " (loaded in " + durationInSeconds + " seconds)");
+        System.out.println("Routes: " + routes.size() + "   (loaded in " + durationInSeconds + " seconds)");
 
         // Measure stops loading time
         startTime = System.nanoTime();
         this.stops = csvService.getStops();
         endTime = System.nanoTime();
         durationInSeconds = (endTime - startTime) / 1_000_000_000.0;
-        System.out.println("stops: " + stops.size() + " (loaded in " + durationInSeconds + " seconds)");
+        System.out.println("Stops:  " + stops.size() + "  (loaded in " + durationInSeconds + " seconds)");
 
         // Measure trips loading time
         startTime = System.nanoTime();
         this.trips = csvService.getTrips(this.routes);
         endTime = System.nanoTime();
         durationInSeconds = (endTime - startTime) / 1_000_000_000.0;
-        System.out.println("trips: " + trips.size() + " (loaded in " + durationInSeconds + " seconds)");
+        System.out.println("Trips:  " + trips.size() + " (loaded in " + durationInSeconds + " seconds)");
 
         // Measure stopTimes loading time
         startTime = System.nanoTime();
         csvService.setStopTimes(stops, trips);
         endTime = System.nanoTime();
         durationInSeconds = (endTime - startTime) / 1_000_000_000.0;
-        System.out.println("stopTimes loaded in " + durationInSeconds + " seconds");
+        System.out.println("StopTimes loaded in " + durationInSeconds + " seconds");
 
-        // TODO: Cleanup bad stops
-        List<String> badStops = new ArrayList<>();
-        for (Map.Entry<String, Stop> entry : stops.entrySet()) {
-            if (entry.getValue().getRoutes().isEmpty()) {
-                badStops.add(entry.getKey());
-                // System.out.println("Stop with no routes: " + entry.getValue());
-            }
-        }
-
-        // TODO: Better cleanup
-        for (String stopId : badStops) stops.remove(stopId);
-
-        System.out.println("Removed " + badStops.size() + " stops with no routes");
+        // Cleanup
+        System.out.println("Cleaned up " + csvService.cleanupUnusedStops(stops) + " unused Stops");
 
         // Test line 71
         testLine71();
