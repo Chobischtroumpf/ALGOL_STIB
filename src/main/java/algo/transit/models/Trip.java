@@ -45,6 +45,8 @@ public class Trip {
         return route;
     }
 
+    public Map<Integer, Pair<LocalTime, Stop>> getStops() { return stops; }
+
     public void addStopTime(int stopSequence, Pair<LocalTime, Stop> stop) { stops.put(stopSequence, stop); }
 
     // Might be used in the future

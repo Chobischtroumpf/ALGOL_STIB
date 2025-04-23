@@ -1,10 +1,13 @@
 package algo.transit.controllers;
 
+import algo.transit.graph.PathSegment;
 import algo.transit.models.Route;
 import algo.transit.models.Stop;
 import algo.transit.models.Trip;
 import algo.transit.services.CSVService;
 
+import java.time.LocalTime;
+import java.util.List;
 import java.util.Map;
 
 
@@ -13,48 +16,62 @@ public class MetaController {
     private final Map<String, Stop>  stops;
     private final Map<String, Trip>  trips;
     private final RouteController    routeController;
+    private final GraphController    graphController;
 
-    public MetaController() {
+    public MetaController(double walkingSpeed, double maxWalkingTime) {
         CSVService csvService = new CSVService();
 
-        long startTime = System.nanoTime();
+        System.out.println("Initializing transit system...");
+        System.out.println("---------------------------------");
+
+        // Load data from CSV files
+        long startLoadTime = System.nanoTime();
         this.routes = csvService.getRoutes();
-        long endTime = System.nanoTime();
-        double durationInSeconds = (endTime - startTime) / 1_000_000_000.0;
-        System.out.println("Routes: " + routes.size() + "   (loaded in " + durationInSeconds + " seconds)");
+        long endLoadTime = System.nanoTime();
+        double loadDurationInSeconds = (endLoadTime - startLoadTime) / 1_000_000_000.0;
+        System.out.println("Loaded " + routes.size() + "   routes: " + loadDurationInSeconds + " s");
 
-        // Measure stops loading time
-        startTime = System.nanoTime();
-        this.stops = csvService.getStops();
-        endTime = System.nanoTime();
-        durationInSeconds = (endTime - startTime) / 1_000_000_000.0;
-        System.out.println("Stops:  " + stops.size() + "  (loaded in " + durationInSeconds + " seconds)");
+        long startStopTime = System.nanoTime();
+        this.stops  = csvService.getStops();
+        long endStopTime = System.nanoTime();
+        double stopDurationInSeconds = (endStopTime - startStopTime) / 1_000_000_000.0;
+        System.out.println("Loaded " + stops.size() + "  stops:  " + stopDurationInSeconds + " s");
 
-        // Measure trips loading time
-        startTime = System.nanoTime();
-        this.trips = csvService.getTrips(this.routes);
-        endTime = System.nanoTime();
-        durationInSeconds = (endTime - startTime) / 1_000_000_000.0;
-        System.out.println("Trips:  " + trips.size() + " (loaded in " + durationInSeconds + " seconds)");
+        long startTripTime = System.nanoTime();
+        this.trips  = csvService.getTrips(this.routes);
+        long endTripTime = System.nanoTime();
+        double tripDurationInSeconds = (endTripTime - startTripTime) / 1_000_000_000.0;
+        System.out.println("Loaded " + trips.size() + " trips:  " + tripDurationInSeconds + " s");
 
-        // Measure stopTimes loading time
-        startTime = System.nanoTime();
+        long startStopTimesTime = System.nanoTime();
         csvService.setStopTimes(stops, trips);
-        endTime = System.nanoTime();
-        durationInSeconds = (endTime - startTime) / 1_000_000_000.0;
-        System.out.println("StopTimes loaded in " + durationInSeconds + " seconds");
+        long endStopTimesTime = System.nanoTime();
+        double stopTimesDurationInSeconds = (endStopTimesTime - startStopTimesTime) / 1_000_000_000.0;
+        System.out.println("Set stop times:       " + stopTimesDurationInSeconds + " s");
 
-        // Cleanup
-        System.out.println("Cleaned up " + csvService.cleanupUnusedStops(stops) + " unused Stops");
+        System.out.println("Cleaned up " + csvService.cleanupUnusedStops(stops) + " unused stops");
+        System.out.println("---------------------------------");
 
-        // Initialize the RouteController
+        // Initialize controllers
         this.routeController = new RouteController(routes, trips);
+        this.graphController = new GraphController(stops, trips, routes);
+
+        // Build the transit graph
+        buildTransitGraph(walkingSpeed, maxWalkingTime);
     }
 
-    public MetaController(Map<String, Route> routes, Map<String, Stop> stops, Map<String, Trip> trips) {
-        this.routes = routes;
-        this.stops  = stops;
-        this.trips  = trips;
-        this.routeController = new RouteController(routes, trips);
+    private void buildTransitGraph(double walkingSpeed, double maxWalkingTime) {
+        long startTime = System.nanoTime();
+        this.graphController.buildGraph(walkingSpeed, maxWalkingTime);
+        long endTime = System.nanoTime();
+        double durationInSeconds = (endTime - startTime) / 1_000_000_000.0;
+        System.out.println("Graph constructed:    " + durationInSeconds + " s");
+    }
+
+    public List<PathSegment> findShortestPath(String fromStopId, String toStopId, LocalTime departureTime) {
+        Stop fromStop = stops.get(fromStopId);
+        Stop toStop = stops.get(toStopId);
+        if (fromStop == null || toStop == null) throw new IllegalArgumentException("Stop not found");
+        return graphController.findShortestPath(fromStop, toStop, departureTime);
     }
 }

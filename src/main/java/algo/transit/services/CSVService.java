@@ -7,6 +7,9 @@ import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import com.opencsv.exceptions.CsvValidationException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -99,10 +102,10 @@ public class CSVService {
          * @throws IOException If an I/O error occurs.
          * @throws CsvException If a CSV parsing error occurs.
          */
-        private CSVIterator(Path filePath, FromCSV<T> converter) throws IOException, CsvException {
+        private CSVIterator(@NotNull Path filePath, FromCSV<T> converter) throws IOException, CsvException {
             this.converter = converter;
             this.reader = new CSVReader(new BufferedReader(new FileReader(filePath.toString()), 8192 * 16));
-            reader.readNextSilently(); // Discard header
+            reader.readNextSilently(); // discard header
         }
 
         @Override
@@ -119,7 +122,7 @@ public class CSVService {
         }
 
         @Override
-        public T next() {
+        public @Nullable T next() {
             if (next == null && !hasNext()) return null;
             String[] current = next;
             next = null;
@@ -127,7 +130,7 @@ public class CSVService {
         }
 
         @Override
-        public Iterator<T> iterator() {
+        public @NotNull Iterator<T> iterator() {
             return this;
         }
     }
@@ -140,7 +143,8 @@ public class CSVService {
      * @param <T>       The type of object to be created.
      * @return An iterable of objects created from the CSV rows.
      */
-    private static <T> Iterable<T> readCSV(Path filePath, FromCSV<T> converter) {
+    @Contract("_, _ -> new")
+    private static <T> @NotNull Iterable<T> readCSV(Path filePath, FromCSV<T> converter) {
         try {
             return new CSVIterator<>(filePath, converter);
         } catch (IOException | CsvException e) {
@@ -188,7 +192,7 @@ public class CSVService {
                     trip.addStopTime(stopSequence, new ImmutablePair<>(departureTime, stop));
 
                     // Trips don't necessarily contain all the stops
-                    // Sadly adds about 3 seconds to the loading time :(
+                    // Sadly adds about 2-3 seconds to the loading time :(
                     Route route = trip.getRoute();
                     if (route != null) {
                         route.addPossibleStop(stop);
@@ -207,7 +211,7 @@ public class CSVService {
         return trips;
     }
 
-    public int cleanupUnusedStops(Map<String, Stop> stops) {
+    public int cleanupUnusedStops(@NotNull Map<String, Stop> stops) {
         List<String> badStops = new ArrayList<>();
         for (Map.Entry<String, Stop> entry : stops.entrySet()) {
             if (entry.getValue().getRoutes().isEmpty()) badStops.add(entry.getKey());
@@ -225,7 +229,7 @@ public class CSVService {
      * @param time The time string in the format "HH:mm:ss".
      * @return A LocalTime object representing the parsed time.
      */
-    private static LocalTime checkTime(String time) {
+    private static LocalTime checkTime(@NotNull String time) {
         String[] timeArr = time.split(":");
 
         int hour    = Integer.parseInt(timeArr[0]);

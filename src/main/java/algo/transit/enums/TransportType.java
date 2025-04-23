@@ -5,6 +5,7 @@ public enum TransportType {
     TRAIN,
     TRAM,
     METRO,
+    FOOT,
     UNKNOWN;
 
     /**
