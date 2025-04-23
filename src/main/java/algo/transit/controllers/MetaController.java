@@ -4,11 +4,7 @@ import algo.transit.models.Route;
 import algo.transit.models.Stop;
 import algo.transit.models.Trip;
 import algo.transit.services.CSVService;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 
@@ -16,6 +12,7 @@ public class MetaController {
     private final Map<String, Route> routes;
     private final Map<String, Stop>  stops;
     private final Map<String, Trip>  trips;
+    private final RouteController    routeController;
 
     public MetaController() {
         CSVService csvService = new CSVService();
@@ -50,89 +47,14 @@ public class MetaController {
         // Cleanup
         System.out.println("Cleaned up " + csvService.cleanupUnusedStops(stops) + " unused Stops");
 
-        // Test line 71
-        testLine71();
+        // Initialize the RouteController
+        this.routeController = new RouteController(routes, trips);
     }
 
     public MetaController(Map<String, Route> routes, Map<String, Stop> stops, Map<String, Trip> trips) {
         this.routes = routes;
         this.stops  = stops;
         this.trips  = trips;
-    }
-
-    private void testLine71() {
-        System.out.println("\n--- TESTING LINE 71 (STIB) ---");
-
-        // Find Route for line 71
-        Route line71 = null;
-        for (Route route : routes.values()) {
-            if (route.getShortName().equals("71") && route.getId().startsWith("STIB-")) {
-                line71 = route;
-                System.out.println("Found Route 71: " + route);
-                break;
-            }
-        }
-
-        if (line71 == null) {
-            System.out.println("Line 71 from STIB not found!");
-            return;
-        }
-
-        // Find all trips for this route
-        List<Trip> line71Trips = new ArrayList<>();
-        for (Trip trip : trips.values()) {
-            try {
-                if (trip.getRoute().equals(line71)) {
-                    line71Trips.add(trip);
-                }
-            } catch (Exception e) {
-                // Skip problematic trips
-            }
-        }
-
-        System.out.println("Found " + line71Trips.size() + " trips for Line 71");
-
-        // Take the first trip and print details
-        if (!line71Trips.isEmpty()) {
-            Trip firstTrip = line71Trips.getFirst();
-            System.out.println("\nTrip ID: " + firstTrip.getId());
-
-            List<Map.Entry<Integer, Pair<LocalTime, Stop>>> orderedStops = firstTrip.getOrderedStopTimes();
-
-            if (orderedStops.isEmpty()) {
-                System.out.println("No stops found for this trip.");
-                return;
-            }
-
-            // First stop
-            Map.Entry<Integer, Pair<LocalTime, Stop>> firstEntry = orderedStops.getFirst();
-            LocalTime firstTime = firstEntry.getValue().getLeft();
-            Stop firstStop = firstEntry.getValue().getRight();
-
-            System.out.println("Starts at: " + firstStop.getName() + " at " + firstTime);
-
-            // Process each subsequent stop
-            for (int i = 1; i < orderedStops.size(); i++) {
-                Map.Entry<Integer, Pair<LocalTime, Stop>> entry = orderedStops.get(i);
-                Map.Entry<Integer, Pair<LocalTime, Stop>> prevEntry = orderedStops.get(i - 1);
-
-                int sequence = entry.getKey();
-                LocalTime time = entry.getValue().getLeft();
-                Stop stop = entry.getValue().getRight();
-
-                LocalTime prevTime = prevEntry.getValue().getLeft();
-                long minutesDiff = java.time.temporal.ChronoUnit.MINUTES.between(prevTime, time);
-
-                System.out.println("Stop " + sequence + ": " + stop.getName()
-                        + " at " + time + " (+" + minutesDiff + " min)");
-            }
-
-            // Total journey time
-            Map.Entry<Integer, Pair<LocalTime, Stop>> lastEntry = orderedStops.getLast();
-            LocalTime lastTime = lastEntry.getValue().getLeft();
-            long totalMinutes = java.time.temporal.ChronoUnit.MINUTES.between(firstTime, lastTime);
-
-            System.out.println("Total journey time: " + totalMinutes + " minutes");
-        }
+        this.routeController = new RouteController(routes, trips);
     }
 }

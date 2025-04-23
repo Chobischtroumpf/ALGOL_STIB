@@ -11,11 +11,11 @@ public class Stop {
     private final Map<String, Route> routes;
 
     public Stop(String stopId, String name, double latitude, double longitude) {
-        this.stopId     = stopId;
-        this.name       = name;
-        this.latitude   = latitude;
-        this.longitude  = longitude;
-        this.routes     = new HashMap<>();
+        this.stopId    = stopId;
+        this.name      = name;
+        this.latitude  = latitude;
+        this.longitude = longitude;
+        this.routes    = new HashMap<>();
     }
 
     @Override
@@ -25,7 +25,7 @@ public class Stop {
                 ", name='" + name + '\'' +
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
-                ", routes=" + routes.values() +
+                ", routesCount=" + routes.size() +
                 '}';
     }
 
@@ -35,13 +35,13 @@ public class Stop {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         Stop stop = (Stop) obj;
-        return Double.compare(stop.latitude, latitude) == 0 &&
-               Double.compare(stop.longitude, longitude) == 0;
+        return Double.compare(stop.latitude, latitude) == 0 &&  Double.compare(stop.longitude, longitude) == 0;
     }
 
-    public String getId() {
-        return stopId;
-    }
+    @Override
+    public int hashCode() { return stopId != null ? stopId.hashCode() : 0; }
+
+    public String getStopId() { return stopId; }
 
     public String getName() {
         return name;
@@ -55,15 +55,13 @@ public class Stop {
         return longitude;
     }
 
-    public Map<String, Route> getRoutes() {
-        return routes;
-    }
+    public Map<String, Route> getRoutes() { return routes; }
 
     public Route getRoute(String routeId) {
         return routes.get(routeId);
     }
 
     public void addRoute(Route route) {
-        routes.put(route.getId(), route);
+        routes.put(route.getRouteId(), route);
     }
 }

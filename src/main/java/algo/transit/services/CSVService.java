@@ -20,6 +20,10 @@ import java.util.List;
 import java.util.Map;
 
 
+/**
+ * Service class for handling CSV files related to transit data.
+ * Provides methods to read and process routes, stops, trips, and stop times.
+ */
 public class CSVService {
     private final Path[] routesPaths, stopTimesPaths, stopsPaths, tripsPaths;
 
@@ -27,6 +31,14 @@ public class CSVService {
         this(DefaultRoutesPaths, DefaultStopTimesPaths, DefaultStopsPaths, DefaultTripsPaths);
     }
 
+    /**
+     * Constructor that allows custom file paths for routes, stop times, stops, and trips.
+     *
+     * @param routesPaths    Array of paths to the routes CSV files.
+     * @param stopTimesPaths Array of paths to the stop times CSV files.
+     * @param stopsPaths     Array of paths to the stops CSV files.
+     * @param tripsPaths     Array of paths to the trips CSV files.
+     */
     public CSVService(Path[] routesPaths, Path[] stopTimesPaths, Path[] stopsPaths, Path[] tripsPaths) {
         this.routesPaths = routesPaths;
         this.stopTimesPaths = stopTimesPaths;
@@ -34,6 +46,7 @@ public class CSVService {
         this.tripsPaths = tripsPaths;
     }
 
+    // Default file paths for various GTFS data files
     private static final Path[] DefaultRoutesPaths = new Path[]{
             Path.of("src", "main", "resources", "GTFS", "DELIJN", "routes.csv"),
             Path.of("src", "main", "resources", "GTFS", "SNCB", "routes.csv"),
@@ -62,15 +75,31 @@ public class CSVService {
             Path.of("src", "main", "resources", "GTFS", "STIB", "trips.csv")
     };
 
-    interface FromCSV<T> {
-        T fromCSV(String[] row);
-    }
+    /**
+     * Functional interface for converting a CSV row into an object of type T.
+     *
+     * @param <T> The type of object to be created from a CSV row.
+     */
+    interface FromCSV<T> { T fromCSV(String[] row); }
 
+    /**
+     * Iterator for reading and converting rows from a CSV file.
+     *
+     * @param <T> The type of object to be created from each row.
+     */
     private static class CSVIterator<T> implements Iterator<T>, Iterable<T>, AutoCloseable {
         private final FromCSV<T> converter;
         private final CSVReader reader;
         private String[] next = null;
 
+        /**
+         * Constructs a CSVIterator for a given file and converter.
+         *
+         * @param filePath  Path to the CSV file.
+         * @param converter Converter to transform rows into objects.
+         * @throws IOException If an I/O error occurs.
+         * @throws CsvException If a CSV parsing error occurs.
+         */
         private CSVIterator(Path filePath, FromCSV<T> converter) throws IOException, CsvException {
             this.converter = converter;
             this.reader = new CSVReader(new BufferedReader(new FileReader(filePath.toString()), 8192 * 16));
@@ -78,9 +107,7 @@ public class CSVService {
         }
 
         @Override
-        public void close() throws Exception {
-            reader.close();
-        }
+        public void close() throws Exception { reader.close(); }
 
         @Override
         public boolean hasNext() {
@@ -106,6 +133,14 @@ public class CSVService {
         }
     }
 
+    /**
+     * Reads a CSV file and converts its rows into objects of type T.
+     *
+     * @param filePath  Path to the CSV file.
+     * @param converter Converter to transform rows into objects.
+     * @param <T>       The type of object to be created.
+     * @return An iterable of objects created from the CSV rows.
+     */
     private static <T> Iterable<T> readCSV(Path filePath, FromCSV<T> converter) {
         try {
             return new CSVIterator<>(filePath, converter);
@@ -114,22 +149,38 @@ public class CSVService {
         }
     }
 
+    /**
+     * Reads and processes route data from the CSV files.
+     *
+     * @return A map of route IDs to Route objects.
+     */
     public Map<String, Route> getRoutes() {
         Map<String, Route> routes = new HashMap<>();
         for (Path path : routesPaths)
             for (Route route : readCSV(path, row -> new Route(row[0], row[1], row[2], row[3])))
-                routes.put(route.getId(), route);
+                routes.put(route.getRouteId(), route);
         return routes;
     }
 
+    /**
+     * Reads and processes stop data from the CSV files.
+     *
+     * @return A map of stop IDs to Stop objects.
+     */
     public Map<String, Stop> getStops() {
         Map<String, Stop> stops = new HashMap<>();
         for (Path path : stopsPaths)
             for (Stop stop : readCSV(path, row -> new Stop(row[0], row[1], Double.parseDouble(row[2]), Double.parseDouble(row[3]))))
-                stops.put(stop.getId(), stop);
+                stops.put(stop.getStopId(), stop);
         return stops;
     }
 
+    /**
+     * Sets stop times for trips and associates stops with routes.
+     *
+     * @param stops A map of stop IDs to Stop objects.
+     * @param trips A map of trip IDs to Trip objects.
+     */
     public void setStopTimes(Map<String, Stop> stops, Map<String, Trip> trips) {
         for (Path path : stopTimesPaths) {
             for (String[] row : readCSV(path, row -> row)) {
@@ -146,20 +197,39 @@ public class CSVService {
 
                 if (stop != null && trip != null) {
                     trip.addStopTime(stopSequence, new ImmutablePair<>(departureTime, stop));
-                    stop.addRoute(trip.getRoute());
+
+                    // Trips don't necessarily contain all the stops
+                    // Sadly adds about 3 seconds to the loading time :(
+                    Route route = trip.getRoute();
+                    if (route != null) {
+                        route.addPossibleStop(stop);
+                        stop.addRoute(route);
+                    }
                 }
             }
         }
     }
 
+    /**
+     * Reads and processes trip data from the CSV files.
+     *
+     * @param routes A map of route IDs to Route objects.
+     * @return A map of trip IDs to Trip objects.
+     */
     public Map<String, Trip> getTrips(Map<String, Route> routes) {
         Map<String, Trip> trips = new HashMap<>();
         for (Path path : tripsPaths)
             for (Trip trip : readCSV(path, row -> new Trip(row[0], routes.get(row[1]))))
-                trips.put(trip.getId(), trip);
+                trips.put(trip.getTripId(), trip);
         return trips;
     }
 
+    /**
+     * Removes unused stops that are not associated with any routes.
+     *
+     * @param stops A map of stop IDs to Stop objects.
+     * @return The number of stops removed.
+     */
     public int cleanupUnusedStops(Map<String, Stop> stops) {
         List<String> badStops = new ArrayList<>();
         for (Map.Entry<String, Stop> entry : stops.entrySet()) {
@@ -172,8 +242,13 @@ public class CSVService {
         return badStops.size();
     }
 
+    /**
+     * Parses and validates a time string, correcting invalid values if necessary.
+     *
+     * @param time The time string in the format "HH:mm:ss".
+     * @return A LocalTime object representing the parsed time.
+     */
     private static LocalTime checkTime(String time) {
-        // Let's write a parser that check that the time is in the right format, and corrects it if not
         String[] timeArr = time.split(":");
 
         int hour    = Integer.parseInt(timeArr[0]);
