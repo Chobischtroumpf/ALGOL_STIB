@@ -14,7 +14,7 @@ public class Trip {
     public Trip(String tripId, Route route) {
         this.tripId     = tripId;
         this.route      = route;
-        this.stops  = new HashMap<>();
+        this.stops      = new HashMap<>();
     }
 
     @Override

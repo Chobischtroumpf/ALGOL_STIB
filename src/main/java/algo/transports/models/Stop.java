@@ -29,6 +29,16 @@ public class Stop {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        // If latitude and longitude are the same, we consider the stops to be the same
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Stop stop = (Stop) obj;
+        return Double.compare(stop.latitude, latitude) == 0 &&
+               Double.compare(stop.longitude, longitude) == 0;
+    }
+
     public String getId() {
         return stopId;
     }

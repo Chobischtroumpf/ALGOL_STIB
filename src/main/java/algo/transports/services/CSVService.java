@@ -93,7 +93,6 @@ public class CSVService {
     }
 
     public void setStopTimes(Map<String, Stop> stops, Map<String, Trip> trips) {
-
         for (Path path : stopTimesPaths) {
             List<String[]> data = CSVRepository.readCSV(path);
             if (data != null) {
@@ -105,15 +104,16 @@ public class CSVService {
 
                     Stop stop = stops.get(stopId);
                     Trip trip = trips.get(tripId);
+
                     if (stop == null) {
                         System.out.println("Stop not found: " + stopId);
                     }
                     if (trip == null) {
                         System.out.println("Trip not found: " + tripId);
                     }
+
                     if (stop != null && trip != null) {
                         trip.addStopTime(stopSequence, new ImmutablePair<>(LocalTime.parse(departureTime), stop));
-
                         stop.addRoute(trip.getRoute());
                     }
                 }
