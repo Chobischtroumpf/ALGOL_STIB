@@ -17,7 +17,7 @@ public class Route {
         this.type       = TransportType.fromString(typeStr);
     }
 
-    public String getRouteID() {
+    public String getId() {
         return routeId;
     }
 

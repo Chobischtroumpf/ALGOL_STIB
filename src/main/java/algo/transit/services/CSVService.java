@@ -1,22 +1,21 @@
 package algo.transit.services;
 
-import algo.transit.models.Route;
-import algo.transit.models.Stop;
-import algo.transit.models.Trip;
-import algo.transit.repositories.CSVRepository;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
-import java.nio.file.Path;
 import java.time.LocalTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Path;
+import java.util.*;
+import java.io.*;
+
+import com.opencsv.exceptions.CsvValidationException;
+import com.opencsv.exceptions.CsvException;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import algo.transit.models.*;
+import com.opencsv.CSVReader;
 
 public class CSVService {
-    Path[] routesPaths;
-    Path[] stopTimesPaths;
-    Path[] stopsPaths;
-    Path[] tripsPaths;
+    private final Path[] routesPaths;
+    private final Path[] stopTimesPaths;
+    private final Path[] stopsPaths;
+    private final Path[] tripsPaths;
 
     public CSVService() {
         this.routesPaths = new Path[4];
@@ -64,58 +63,75 @@ public class CSVService {
         tripsPaths[3] = Path.of("src", "main", "resources", "GTFS", "STIB", "trips.csv");
     }
 
+    interface FromCSV<T> { T fromCSV(String[] row); }
+
+    private static class CSVIterator<T> implements Iterator<T>, Iterable<T>, AutoCloseable {
+        private final FromCSV<T> converter;
+        private final CSVReader reader;
+        private String[] next = null;
+
+        private CSVIterator(Path filePath, FromCSV<T> converter) throws IOException, CsvException {
+            this.converter = converter;
+            this.reader = new CSVReader(new BufferedReader(new FileReader(filePath.toString()), 8192 * 16));
+            reader.readNextSilently(); // Discard header
+        }
+
+        @Override public void close() throws Exception { reader.close(); }
+
+        @Override public boolean hasNext() {
+            if (next != null) return true;
+            try { return (next = reader.readNext()) != null; }
+            catch (IOException | CsvValidationException e) { throw new RuntimeException(e); }
+        }
+
+        @Override public T next() {
+            if (next == null && !hasNext()) return null;
+            String[] current = next;
+            next = null;
+            return converter.fromCSV(current);
+        }
+
+        @Override public Iterator<T> iterator() { return this; }
+    }
+
+    private static <T> Iterable<T> readCSV(Path filePath, FromCSV<T> converter) {
+        try { return new CSVIterator<>(filePath, converter); }
+        catch (IOException | CsvException e) { throw new RuntimeException(e); }
+    }
+
     public Map<String, Route> getRoutes() {
         Map<String, Route> routes = new HashMap<>();
-        for (Path path : routesPaths) {
-            List<String[]> data = CSVRepository.readCSV(path);
-            if (data != null) {
-                for (String[] row : data) {
-                    Route route = new Route(row[0], row[1], row[2], row[3]);
-                    routes.put(row[0], route);
-                }
-            }
-        }
+        for (Path path: routesPaths)
+            for (Route route: readCSV(path, row -> new Route(row[0], row[1], row[2], row[3])))
+                routes.put(route.getId(), route);
         return routes;
     }
 
     public Map<String, Stop> getStops() {
         Map<String, Stop> stops = new HashMap<>();
-        for (Path path : stopsPaths) {
-            List<String[]> data = CSVRepository.readCSV(path);
-            if (data != null) {
-                for (String[] row : data) {
-                    Stop stop = new Stop(row[0], row[1], Double.parseDouble(row[2]), Double.parseDouble(row[3]));
-                    stops.put(row[0], stop);
-                }
-            }
-        }
+        for (Path path: stopsPaths)
+            for (Stop stop: readCSV(path, row -> new Stop(row[0], row[1], Double.parseDouble(row[2]), Double.parseDouble(row[3]))))
+                stops.put(stop.getId(), stop);
         return stops;
     }
 
     public void setStopTimes(Map<String, Stop> stops, Map<String, Trip> trips) {
-        for (Path path : stopTimesPaths) {
-            List<String[]> data = CSVRepository.readCSV(path);
-            if (data != null) {
-                for (String[] row : data) {
-                    String tripId = row[0];
-                    String stopId = row[2];
-                    String departureTime = checkTime(row[1]);
-                    int stopSequence = Integer.parseInt(row[3]);
+        for (Path path: stopTimesPaths) {
+            for (String[] row: readCSV(path, row -> row)) {
+                String tripId = row[0];
+                String stopId = row[2];
+                LocalTime departureTime = checkTime(row[1]);
+                int stopSequence = Integer.parseInt(row[3]);
 
-                    Stop stop = stops.get(stopId);
-                    Trip trip = trips.get(tripId);
+                Stop stop = stops.get(stopId);
+                Trip trip = trips.get(tripId);
 
-                    if (stop == null) {
-                        System.out.println("Stop not found: " + stopId);
-                    }
-                    if (trip == null) {
-                        System.out.println("Trip not found: " + tripId);
-                    }
+                if (stop == null) System.out.println("Stop not found: " + stopId);
+                if (trip == null) System.out.println("Trip not found: " + tripId);
 
-                    if (stop != null && trip != null) {
-                        trip.addStopTime(stopSequence, new ImmutablePair<>(LocalTime.parse(departureTime), stop));
-                        stop.addRoute(trip.getRoute());
-                    }
+                if (stop != null && trip != null) {
+                    trip.addStopTime(stopSequence, new ImmutablePair<>(departureTime, stop));
+                    stop.addRoute(trip.getRoute());
                 }
             }
         }
@@ -123,52 +139,35 @@ public class CSVService {
 
     public Map<String, Trip> getTrips(Map<String, Route> routes) {
         Map<String, Trip> trips = new HashMap<>();
-        for (Path path : tripsPaths) {
-            List<String[]> data = CSVRepository.readCSV(path);
-            if (data != null) {
-                for (String[] row : data) {
-                    Trip trip = new Trip(row[0], routes.get(row[1]));
-                    trips.put(row[0], trip);
-                }
-            }
-        }
+        for (Path path: tripsPaths)
+            for (Trip trip: readCSV(path, row -> new Trip(row[0], routes.get(row[1]))))
+                trips.put(trip.getId(), trip);
         return trips;
     }
 
-    private String checkTime(String time) {
-        // Let's write a parser that check that the time is in the right format,
-        // and corrects it if not
+    private LocalTime checkTime(String time) {
+        // Let's write a parser that check that the time is in the right format, and corrects it if not
         String[] timeArr = time.split(":");
-        String hour = timeArr[0];
-        String minute = timeArr[1];
-        String second = timeArr[2];
 
-        int h = Integer.parseInt(hour);
-        int m = Integer.parseInt(minute);
-        int s = Integer.parseInt(second);
-        if (h > 23) {
-            // modulo 24
-            hour = String.valueOf(h % 24);
-        }
-        if (m > 59) {
-            // modulo 60
-            minute = String.valueOf(m % 60);
-        }
-        if (s > 59) {
-            // modulo 60
-            second = String.valueOf(s % 60);
+        int hour    = Integer.parseInt(timeArr[0]);
+        int minute  = Integer.parseInt(timeArr[1]);
+        int second  = Integer.parseInt(timeArr[2]);
+
+        if (hour > 23) {
+            hour %= 24;
+            // day += 1;
         }
 
-        if (hour.length() == 1) {
-            hour = "0" + hour;
-        }
-        if (minute.length() == 1) {
-            minute = "0" + minute;
-        }
-        if (second.length() == 1) {
-            second = "0" + second;
+        if (minute > 59) {
+            minute %= 60;
+            // hour += 1;
         }
 
-        return (hour + ":" + minute + ":" + second);
+        if (second > 59) {
+            second %= 60;
+            // minute += 1;
+        }
+
+        return LocalTime.of(hour, minute, second);
     }
 }

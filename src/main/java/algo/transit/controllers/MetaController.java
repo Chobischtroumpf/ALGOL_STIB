@@ -77,7 +77,7 @@ public class MetaController {
         // Find Route for line 71
         Route line71 = null;
         for (Route route : routes.values()) {
-            if (route.getShortName().equals("71") && route.getRouteID().startsWith("STIB-")) {
+            if (route.getShortName().equals("71") && route.getId().startsWith("STIB-")) {
                 line71 = route;
                 System.out.println("Found Route 71: " + route);
                 break;
@@ -106,7 +106,7 @@ public class MetaController {
         // Take the first trip and print details
         if (!line71Trips.isEmpty()) {
             Trip firstTrip = line71Trips.getFirst();
-            System.out.println("\nTrip ID: " + firstTrip.getTripId());
+            System.out.println("\nTrip ID: " + firstTrip.getId());
 
             List<Map.Entry<Integer, Pair<LocalTime, Stop>>> orderedStops = firstTrip.getOrderedStopTimes();
 

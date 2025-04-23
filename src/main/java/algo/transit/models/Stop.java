@@ -64,6 +64,6 @@ public class Stop {
     }
 
     public void addRoute(Route route) {
-        routes.put(route.getRouteID(), route);
+        routes.put(route.getId(), route);
     }
 }
