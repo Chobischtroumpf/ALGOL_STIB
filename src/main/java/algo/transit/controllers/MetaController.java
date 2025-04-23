@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
 public class MetaController {
     private final Map<String, Route> routes;
     private final Map<String, Stop>  stops;
@@ -56,9 +57,8 @@ public class MetaController {
         }
 
         // TODO: Better cleanup
-        for (String stopId : badStops) {
-            stops.remove(stopId);
-        }
+        for (String stopId : badStops) stops.remove(stopId);
+
         System.out.println("Removed " + badStops.size() + " stops with no routes");
 
         // Test line 71
