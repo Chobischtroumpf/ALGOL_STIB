@@ -9,10 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GraphController {
     private final Map<String, Stop>  stops;
@@ -110,7 +107,97 @@ public class GraphController {
     }
 
     public List<PathSegment> findShortestPath(Stop fromStop, Stop toStop, LocalTime departureTime) {
-        // TODO: Implement A* search to find the shortest path
-        return List.of();
+        PriorityQueue<SearchNode> openSet = new PriorityQueue<>();
+        Map<ArrivalKey, SearchNode> visited = new HashMap<>();
+
+        SearchNode startNode = new SearchNode(fromStop, departureTime, null, null, 0, estimateTime(fromStop, toStop));
+        openSet.add(startNode);
+
+        while (!openSet.isEmpty()) {
+            SearchNode current = openSet.poll();
+            if (current.stop.equals(toStop)) return reconstructPath(current); // Found the destination
+
+            // Skip if we've already found a better path to this stop at this time or earlier
+            ArrivalKey key = new ArrivalKey(current.stop, current.arrivalTime);
+            if (visited.containsKey(key) && !visited.get(key).equals(current)) continue;
+
+            visited.put(key, current);
+
+            List<Edge> edges = adjacencyList.get(current.stop);
+            if (edges == null) continue;
+
+            for (Edge edge : edges) {
+                // Skip unavailable edges
+                if (edge instanceof TransitEdge transitEdge) {
+                    if (!transitEdge.isAvailableAt(current.arrivalTime)) continue;
+                }
+
+                LocalTime nextArrivalTime = edge.getArrivalTime(current.arrivalTime);
+                int gScore = current.gScore + edge.getDurationMinutes(current.arrivalTime);
+
+                SearchNode nextNode = new SearchNode(
+                        edge.getTo(),
+                        nextArrivalTime,
+                        current,
+                        edge,
+                        gScore,
+                        gScore + estimateTime(edge.getTo(), toStop)
+                );
+
+                // Check if we've already visited this stop at this time or earlier
+                ArrivalKey nextKey = new ArrivalKey(nextNode.stop, nextNode.arrivalTime);
+                if (visited.containsKey(nextKey)) { SearchNode existingNode = visited.get(nextKey);
+                    if (nextNode.gScore >= existingNode.gScore) continue; // Skip if we found a better path
+                }
+
+                openSet.add(nextNode);
+            }
+        }
+
+        return List.of(); // No path found
+    }
+
+    private int estimateTime(Stop from, Stop to) {
+        // Heuristic: straight-line distance divided by average speed
+        double distance = calculateDistance(from, to);
+        double estimatedMinutes = distance / 667.0;
+        return (int) Math.ceil(estimatedMinutes);
+    }
+
+    private @NotNull List<PathSegment> reconstructPath(SearchNode goalNode) {
+        List<PathSegment> reversedPath = new ArrayList<>();
+        SearchNode current = goalNode;
+
+        while (current.parent != null) {
+            Edge edge = current.edge;
+
+            // Create path segment
+            if (edge instanceof TransitEdge transitEdge) {
+                reversedPath.add(new PathSegment(
+                        transitEdge.getFrom(),
+                        transitEdge.getTo(),
+                        transitEdge.getDepartureTime(),
+                        current.arrivalTime,
+                        transitEdge.getRoute(),
+                        transitEdge.getType()
+                ));
+            } else if (edge instanceof WalkingEdge) {
+                // For walking edges
+                reversedPath.add(new PathSegment(
+                        edge.getFrom(),
+                        edge.getTo(),
+                        current.parent.arrivalTime,
+                        current.arrivalTime,
+                        null, // No route for walking
+                        TransportType.FOOT
+                ));
+            }
+
+            current = current.parent;
+        }
+
+        // Reverse the path to get it in the correct order
+        Collections.reverse(reversedPath);
+        return reversedPath;
     }
 }
