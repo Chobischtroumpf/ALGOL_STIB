@@ -13,7 +13,6 @@ public class MetaController {
     private final Map<String, Route> routes;
     private final Map<String, Stop>  stops;
     private final Map<String, Trip>  trips;
-    private final RouteController    routeController;
 
     public MetaController(double walkingSpeed, double maxWalkingTime) {
         CSVService csvService = new CSVService();
@@ -57,8 +56,5 @@ public class MetaController {
         Map<String, Trip> filteredTrips = stop.getRelevantTrips(time);
 
         System.out.println(filteredTrips.size() + " trips after filter");
-
-        // Initialize controllers
-        this.routeController = new RouteController(routes, trips);
     }
 }
