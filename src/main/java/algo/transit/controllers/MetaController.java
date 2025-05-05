@@ -7,7 +7,6 @@ import algo.transit.services.CSVService;
 
 import java.time.LocalTime;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 
 public class MetaController {
@@ -47,7 +46,7 @@ public class MetaController {
         double stopTimesDurationInSeconds = (endStopTimesTime - startStopTimesTime) / 1_000_000_000.0;
         System.out.println("Set stop times:       " + stopTimesDurationInSeconds + " s");
 
-//        System.out.println("Cleaned up " + csvService.cleanupUnusedStops(stops) + " unused stops");
+        // System.out.println("Cleaned up " + csvService.cleanupUnusedStops(stops) + " unused stops");
         System.out.println("---------------------------------");
 
 

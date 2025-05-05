@@ -15,9 +15,7 @@ public enum TransportType {
      * @return The matching TransportType or UNKNOWN if no match
      */
     public static TransportType fromString(String typeStr) {
-        if (typeStr == null || typeStr.isEmpty()) {
-            return UNKNOWN;
-        }
+        if (typeStr == null || typeStr.isEmpty()) return UNKNOWN;
 
         try {
             return valueOf(typeStr.toUpperCase());

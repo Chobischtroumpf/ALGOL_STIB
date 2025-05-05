@@ -25,9 +25,7 @@ import java.util.*;
 public class CSVService {
     private final Path[] routesPaths, stopTimesPaths, stopsPaths, tripsPaths;
 
-    public CSVService() {
-        this(DefaultRoutesPaths, DefaultStopTimesPaths, DefaultStopsPaths, DefaultTripsPaths);
-    }
+    public CSVService() { this(DefaultRoutesPaths, DefaultStopTimesPaths, DefaultStopsPaths, DefaultTripsPaths); }
 
     /**
      * Constructor that allows custom file paths for routes, stop times, stops, and trips.
@@ -126,9 +124,7 @@ public class CSVService {
         }
 
         @Override
-        public @NotNull Iterator<T> iterator() {
-            return this;
-        }
+        public @NotNull Iterator<T> iterator() { return this; }
     }
 
     /**
@@ -187,8 +183,6 @@ public class CSVService {
                 if (stop != null && trip != null) {
                     trip.addStopTime(stopSequence, new ImmutablePair<>(departureTime, stop));
 
-                    // Trips don't necessarily contain all the stops
-                    // Sadly adds about 2-3 seconds to the loading time :(
                     Route route = trip.getRoute();
                     if (route != null) {
                         route.addPossibleStop(stop);
@@ -217,7 +211,6 @@ public class CSVService {
 
         // Remove the unused stops
         for (String stopId : badStops) stops.remove(stopId);
-
         return badStops.size();
     }
 

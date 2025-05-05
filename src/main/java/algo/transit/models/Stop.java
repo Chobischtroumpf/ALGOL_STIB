@@ -48,37 +48,23 @@ public class Stop {
 
     public String getStopId() { return stopId; }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name; }
 
-    public double getLat() {
-        return latitude;
-    }
+    public double getLat() { return latitude; }
 
-    public double getLon() {
-        return longitude;
-    }
+    public double getLon() { return longitude; }
 
     public Map<String, Route> getRoutes() { return routes; }
 
-    public Route getRoute(String routeId) {
-        return routes.get(routeId);
-    }
+    public Route getRoute(String routeId) { return routes.get(routeId); }
 
-    public void addRoute(Route route) {
-        routes.put(route.getRouteId(), route);
-    }
+    public void addRoute(Route route) { routes.put(route.getRouteId(), route); }
 
     public Map<String, Trip> getTrips() { return trips; }
 
-    public Trip getTrip(String tripId) {
-        return trips.get(tripId);
-    }
+    public Trip getTrip(String tripId) { return trips.get(tripId); }
 
-    public void addTrip(Trip trip) {
-        trips.put(trip.getTripId(), trip);
-    }
+    public void addTrip(Trip trip) { trips.put(trip.getTripId(), trip); }
 
     public Map<String, Trip> getRelevantTrips(LocalTime time) {
         Map<String, Trip> relevantTrips = new HashMap<>();
