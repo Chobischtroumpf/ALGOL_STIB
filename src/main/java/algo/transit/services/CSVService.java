@@ -147,7 +147,7 @@ public class CSVService {
     public Map<String, Route> getRoutes() {
         Map<String, Route> routes = new HashMap<>();
         for (Path path : routesPaths)
-            for (Route route : readCSV(path, row -> new Route(row[0], row[1], row[2], row[3])))
+            for (Route route : readCSV(path, row -> new Route(row[0].intern(), row[1].intern(), row[2].intern(), row[3].intern())))
                 routes.put(route.getRouteId(), route);
         return routes;
     }
@@ -155,7 +155,7 @@ public class CSVService {
     public Map<String, Stop> getStops() {
         Map<String, Stop> stops = new HashMap<>();
         for (Path path : stopsPaths)
-            for (Stop stop : readCSV(path, row -> new Stop(row[0], row[1], Double.parseDouble(row[2]), Double.parseDouble(row[3]))))
+            for (Stop stop : readCSV(path, row -> new Stop(row[0].intern(), row[1].intern(), Double.parseDouble(row[2]), Double.parseDouble(row[3]))))
                 stops.put(stop.getStopId(), stop);
         return stops;
     }
@@ -169,8 +169,8 @@ public class CSVService {
     public void linkData(Map<String, Stop> stops, Map<String, Trip> trips) {
         for (Path path : stopTimesPaths) {
             for (String[] row : readCSV(path, row -> row)) {
-                String tripId = row[0];
-                String stopId = row[2];
+                String tripId = row[0].intern();
+                String stopId = row[2].intern();
                 LocalTime departureTime = checkTime(row[1]);
                 int stopSequence = Integer.parseInt(row[3]);
 
@@ -202,6 +202,7 @@ public class CSVService {
         return trips;
     }
 
+    /// @deprecated This causes issues as ""unused"" stops are actually needed
     public int cleanupUnusedStops(@NotNull Map<String, Stop> stops) {
         List<String> badStops = new ArrayList<>();
         for (Map.Entry<String, Stop> entry : stops.entrySet()) {
