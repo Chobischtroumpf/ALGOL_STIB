@@ -5,51 +5,48 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.time.LocalTime;
 import java.util.*;
 
-
 public class Trip {
-    private final String tripId;
-    private final Route  route;
-    private final TreeMap<Integer, Pair<LocalTime, Stop>> stops = new TreeMap<>();
+    public final String tripId;
+    public final Route route;
+    public final TreeMap<Integer, Pair<LocalTime, Stop>> stops = new TreeMap<>();
 
     public Trip(String tripId, Route route) {
         this.tripId = tripId;
-        this.route  = route;
-    }
-
-    @Override
-    public String toString() {
-        return "Trip{" +
-                "tripId='" + tripId + '\'' +
-                ", route=" + (route != null ? route.getShortName() : "null") +
-                ", stopsCount=" + stops.size() +
-                ", end time=" + getEndTime() +
-                '}';
+        this.route = route;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        Trip trip = (Trip) obj;
-        return tripId.equals(trip.tripId);
+        return tripId.equals(((Trip) obj).tripId);
     }
 
     @Override
-    public int hashCode() { return tripId != null ? tripId.hashCode() : 0; }
+    public int hashCode() {
+        return tripId != null ? tripId.hashCode() : 0;
+    }
 
-    public String getTripId() { return tripId; }
+    public String getTripId() {
+        return tripId;
+    }
 
-    public Route getRoute() throws NullPointerException {
+    public Route getRoute() {
         if (route == null) throw new NullPointerException("Route is not set");
         return route;
     }
 
-    public Map<Integer, Pair<LocalTime, Stop>> getStops() { return stops; }
+    public Map<Integer, Pair<LocalTime, Stop>> getStops() {
+        return stops;
+    }
 
-    public void addStopTime(int stopSequence, Pair<LocalTime, Stop> stop) { stops.put(stopSequence, stop); }
+    public void addStopTime(int stopSequence, Pair<LocalTime, Stop> stop) {
+        stops.put(stopSequence, stop);
+    }
 
     public LocalTime getTimeForStop(Stop stop) {
-        for (Pair<LocalTime, Stop> pair : stops.values()) if (pair.getRight().equals(stop)) return pair.getLeft();
+        for (Pair<LocalTime, Stop> pair : stops.values())
+            if (pair.getRight().equals(stop)) return pair.getLeft();
         return null;
     }
 
@@ -68,7 +65,8 @@ public class Trip {
     }
 
     public List<Stop> getOrderedStops() {
-        return stops.entrySet().stream().sorted(Map.Entry.comparingByKey())
+        return stops.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
                 .map(entry -> entry.getValue().getRight())
                 .toList();
     }
