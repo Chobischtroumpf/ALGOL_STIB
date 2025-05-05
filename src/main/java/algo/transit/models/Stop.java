@@ -4,6 +4,8 @@ import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import static algo.transit.controllers.MetaController.EARTH_RAD;
+
 public class Stop {
     private final String stopId;
     private final String name;
@@ -77,4 +79,21 @@ public class Stop {
         );
         return relevantTrips;
     }
+
+    public double[] calculateBoundingBox(double radius) {
+        double[] boundingBox = new double[4];
+        double lat = this.getLat();
+        double lon = this.getLon();
+
+        double dLat = Math.toDegrees(radius / EARTH_RAD);
+        double dLon = Math.toDegrees(radius / (EARTH_RAD * Math.cos(Math.toRadians(lat))));
+
+        boundingBox[0] = lat - dLat; // min latitude
+        boundingBox[1] = lat + dLat; // max latitude
+        boundingBox[2] = lon - dLon; // min longitude
+        boundingBox[3] = lon + dLon; // max longitude
+
+        return boundingBox;
+    }
+
 }

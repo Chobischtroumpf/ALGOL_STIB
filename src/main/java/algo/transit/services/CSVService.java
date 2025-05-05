@@ -166,7 +166,7 @@ public class CSVService {
      * @param stops A map of stop IDs to Stop objects.
      * @param trips A map of trip IDs to Trip objects.
      */
-    public void setStopTimes(Map<String, Stop> stops, Map<String, Trip> trips) {
+    public void linkData(Map<String, Stop> stops, Map<String, Trip> trips) {
         for (Path path : stopTimesPaths) {
             for (String[] row : readCSV(path, row -> row)) {
                 String tripId = row[0];
@@ -193,7 +193,6 @@ public class CSVService {
             }
         }
     }
-
 
     public Map<String, Trip> getTrips(Map<String, Route> routes) {
         Map<String, Trip> trips = new HashMap<>();

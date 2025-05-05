@@ -48,7 +48,6 @@ public class Trip {
 
     public void addStopTime(int stopSequence, Pair<LocalTime, Stop> stop) { stops.put(stopSequence, stop); }
 
-    // Might be used in the future
     public LocalTime getTimeForStop(Stop stop) {
         for (Pair<LocalTime, Stop> pair : stops.values()) if (pair.getRight().equals(stop)) return pair.getLeft();
         return null;

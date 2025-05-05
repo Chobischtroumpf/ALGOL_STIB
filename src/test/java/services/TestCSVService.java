@@ -73,7 +73,7 @@ public class TestCSVService {
         Map<String, Route> routes = csvService.getRoutes();
         Map<String, Trip>  trips = csvService.getTrips(routes);
 
-        csvService.setStopTimes(stops, trips);
+        csvService.linkData(stops, trips);
 
         Trip trip = trips.get("STIB-124698409288866001");
         assertNotNull(trip, "Trip should exist");
