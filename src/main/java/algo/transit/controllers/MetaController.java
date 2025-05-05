@@ -3,17 +3,18 @@ package algo.transit.controllers;
 import algo.transit.models.Route;
 import algo.transit.models.Stop;
 import algo.transit.models.Trip;
+import algo.transit.models.graphs.Graph;
 import algo.transit.services.CSVService;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.Map;
 
 
 public class MetaController {
     public static double EARTH_RAD = 6371.0;
-    private double walkingSpeed;
-    private double maxWalkingTime;
+    private final double walkingSpeed;
+    private final double maxWalkingTime;
 
     private final Map<String, Route> routes;
     private final Map<String, Stop>  stops;
@@ -47,34 +48,13 @@ public class MetaController {
         double tripDurationInSeconds = (endTripTime - startTripTime) / 1_000_000_000.0;
         System.out.println("Loaded " + trips.size() + " trips:  " + tripDurationInSeconds + " s");
 
-        // long startStopTimesTime = System.nanoTime();
+        // long startLinkTime = System.nanoTime();
         // csvService.linkData(stops, trips);
-        // long endStopTimesTime = System.nanoTime();
-        // double stopTimesDurationInSeconds = (endStopTimesTime - startStopTimesTime) / 1_000_000_000.0;
-        // System.out.println("Set stop times:       " + stopTimesDurationInSeconds + " s");
+        // long endLinkTime = System.nanoTime();
+        // double stopTimesDurationInSeconds = (endLinkTime - startLinkTime) / 1_000_000_000.0;
+        // System.out.println("Linked data:          " + stopTimesDurationInSeconds + " s");
 
         // System.out.println("Cleaned up " + csvService.cleanupUnusedStops(stops) + " unused stops");
-        // System.out.println("---------------------------------");
-
-        Stop stop = stops.get("STIB-5213");
-        // System.out.println("Trip count before filter: " + stop.getTrips().size());
-
-        // LocalTime time = LocalTime.of(10, 0);
-        // Map<String, Trip> filteredTrips = stop.getRelevantTrips(time);
-        // System.out.println("Trip count after filter: " + filteredTrips.size());
-
-        System.out.println("--------------TESTS--------------");
-        // Test distance
-        Stop stop2 = stops.get("STIB-5219F");
-        double distance = calculateDistance(stop, stop2);
-        System.out.println("Distance between Cavell and Churchill: " + distance);
-
-        // Test walking distance
-        System.out.println("Is Churchill within walking distance from Cavell? " + isWithinWalkingDistance(stop, stop2));
-
-        // Test bounding box
-        double[] box = stop.calculateBoundingBox(walkingSpeed * maxWalkingTime / 1000);
-        System.out.println("Is Churchill within the bounding box of Cavell? " + isInBox(box, stop2));
         System.out.println("---------------------------------");
     }
 
@@ -90,7 +70,6 @@ public class MetaController {
         double lon1 = stop1.getLon();
         double lat2 = stop2.getLat();
         double lon2 = stop2.getLon();
-
 
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
