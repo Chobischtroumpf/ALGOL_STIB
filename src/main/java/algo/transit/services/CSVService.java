@@ -193,11 +193,13 @@ public class CSVService {
                     if (route != null) {
                         route.addPossibleStop(stop);
                         stop.addRoute(route);
+                        stop.addTrip(trip);
                     }
                 }
             }
         }
     }
+
 
     public Map<String, Trip> getTrips(Map<String, Route> routes) {
         Map<String, Trip> trips = new HashMap<>();

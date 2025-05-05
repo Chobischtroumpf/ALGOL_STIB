@@ -3,15 +3,13 @@ package algo.transit.models;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.LocalTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class Trip {
     private final String tripId;
     private final Route  route;
-    private final Map<Integer, Pair<LocalTime, Stop>> stops = new HashMap<>();
+    private final TreeMap<Integer, Pair<LocalTime, Stop>> stops = new TreeMap<>();
 
     public Trip(String tripId, Route route) {
         this.tripId = tripId;
@@ -24,6 +22,7 @@ public class Trip {
                 "tripId='" + tripId + '\'' +
                 ", route=" + (route != null ? route.getShortName() : "null") +
                 ", stopsCount=" + stops.size() +
+                ", end time=" + getEndTime() +
                 '}';
     }
 
@@ -53,6 +52,14 @@ public class Trip {
     public LocalTime getTimeForStop(Stop stop) {
         for (Pair<LocalTime, Stop> pair : stops.values()) if (pair.getRight().equals(stop)) return pair.getLeft();
         return null;
+    }
+
+    public LocalTime getEndTime() {
+        return stops.get(stops.lastKey()).getLeft();
+    }
+
+    public LocalTime getStartTime() {
+        return stops.get(stops.firstKey()).getLeft();
     }
 
     public boolean containsStop(Stop stop) {

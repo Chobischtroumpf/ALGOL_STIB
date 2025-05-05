@@ -5,7 +5,9 @@ import algo.transit.models.Stop;
 import algo.transit.models.Trip;
 import algo.transit.services.CSVService;
 
+import java.time.LocalTime;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class MetaController {
@@ -45,8 +47,17 @@ public class MetaController {
         double stopTimesDurationInSeconds = (endStopTimesTime - startStopTimesTime) / 1_000_000_000.0;
         System.out.println("Set stop times:       " + stopTimesDurationInSeconds + " s");
 
-        System.out.println("Cleaned up " + csvService.cleanupUnusedStops(stops) + " unused stops");
+//        System.out.println("Cleaned up " + csvService.cleanupUnusedStops(stops) + " unused stops");
         System.out.println("---------------------------------");
+
+
+        Stop stop = stops.get("STIB-5213");
+        System.out.println("Trip count before filter: " + stop.getTrips().size());
+
+        LocalTime time = LocalTime.of(10, 0);
+        Map<String, Trip> filteredTrips = stop.getRelevantTrips(time);
+
+        System.out.println(filteredTrips.size() + " trips after filter");
 
         // Initialize controllers
         this.routeController = new RouteController(routes, trips);

@@ -1,5 +1,6 @@
 package algo.transit.models;
 
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,13 +10,15 @@ public class Stop {
     private final double latitude;
     private final double longitude;
     private final Map<String, Route> routes;
+    private final Map<String, Trip> trips;
 
     public Stop(String stopId, String name, double latitude, double longitude) {
-        this.stopId    = stopId;
-        this.name      = name;
-        this.latitude  = latitude;
+        this.stopId = stopId;
+        this.name = name;
+        this.latitude = latitude;
         this.longitude = longitude;
-        this.routes    = new HashMap<>();
+        this.routes = new HashMap<>();
+        this.trips = new HashMap<>();
     }
 
     @Override
@@ -26,6 +29,8 @@ public class Stop {
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
                 ", routesCount=" + routes.size() +
+                ", tripsCount=" + trips.size() +
+                ", trips: " + trips.values() +
                 '}';
     }
 
@@ -63,5 +68,27 @@ public class Stop {
 
     public void addRoute(Route route) {
         routes.put(route.getRouteId(), route);
+    }
+
+    public Map<String, Trip> getTrips() { return trips; }
+
+    public Trip getTrip(String tripId) {
+        return trips.get(tripId);
+    }
+
+    public void addTrip(Trip trip) {
+        trips.put(trip.getTripId(), trip);
+    }
+
+    public Map<String, Trip> getRelevantTrips(LocalTime time) {
+        Map<String, Trip> relevantTrips = new HashMap<>();
+        trips.forEach(
+                (tripId, trip) -> {
+                    if ((trip.getStartTime().isAfter(trip.getEndTime()) && trip.getStartTime().isAfter(time)) || trip.getEndTime().isAfter(time)) {
+                        relevantTrips.put(tripId, trip);
+                    }
+                }
+        );
+        return relevantTrips;
     }
 }
