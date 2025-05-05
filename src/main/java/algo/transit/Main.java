@@ -5,7 +5,7 @@ import algo.transit.controllers.MetaController;
 public class Main {
     public static void main(String[] args) {
         double walkingSpeed = 80.0;   // default meters per minute
-        double maxWalkingTime = 30.0; // default walking time
+        double maxWalkingTime = 5.0;  // default walking time
 
         if (args.length >= 2) {
             try {
