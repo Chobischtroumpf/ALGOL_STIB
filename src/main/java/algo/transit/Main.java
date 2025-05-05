@@ -18,7 +18,5 @@ public class Main {
 
         MetaController metaController = new MetaController(walkingSpeed, maxWalkingTime);
         System.out.println("Transit system initialized successfully.");
-
-
     }
 }
