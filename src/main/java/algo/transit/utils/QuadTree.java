@@ -4,6 +4,8 @@ import algo.transit.models.Stop;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class QuadTree {
     public static final int MAX_POINTS = 4;
@@ -13,6 +15,7 @@ public class QuadTree {
     public final int depth;
     public final List<Stop> points;
     public QuadTree[] children;
+    private static final Map<String, Double> distanceCache = new ConcurrentHashMap<>(10000);
 
     public QuadTree(double minX, double minY, double maxX, double maxY, int depth) {
         this.minX = minX;
@@ -93,7 +96,19 @@ public class QuadTree {
     }
 
     public static double distance(double lat1, double lon1, double lat2, double lon2) {
-        final double EARTH_RADIUS = 6371000; // meters
+        // Create cache key
+        String key = lat1 + "," + lon1 + "-" + lat2 + "," + lon2;
+
+        // Check cache first
+        Double cachedDistance = distanceCache.get(key);
+        if (cachedDistance != null) return cachedDistance;
+        double distance = calculateDistance(lat1, lon1, lat2, lon2);
+        if (distanceCache.size() < 10000) distanceCache.put(key, distance);
+        return distance;
+    }
+
+    public static double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final double EARTH_RADIUS = 6371000;
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -101,10 +116,5 @@ public class QuadTree {
                         Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return EARTH_RADIUS * c;
-    }
-
-    public static double distanceSquared(double lat1, double lon1, double lat2, double lon2) {
-        double distance = distance(lat1, lon1, lat2, lon2);
-        return distance * distance;
     }
 }

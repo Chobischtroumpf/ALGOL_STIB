@@ -166,8 +166,8 @@ public class CSVService {
                         continue;
                     }
 
-                    String tripId = row[0].intern();
-                    String stopId = row[2].intern();
+                    String tripId = row[0];
+                    String stopId = row[2];
 
                     LocalTime departureTime;
                     try {

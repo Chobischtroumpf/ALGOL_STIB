@@ -21,9 +21,6 @@ public class Main {
             CSVService csvService = new CSVService();
             TransitPathfinder pathfinder = new TransitPathfinder(csvService);
 
-            if (cmdArgs.maxIterations > 0) pathfinder.setMaxIterations(cmdArgs.maxIterations);
-            if (cmdArgs.maxFrontierSize > 0) pathfinder.setMaxFrontierSize(cmdArgs.maxFrontierSize);
-
             System.out.println("Finding path from " + cmdArgs.startStop + " to " + cmdArgs.endStop + " at " + cmdArgs.startTime);
 
             long startTime = System.currentTimeMillis();
@@ -66,8 +63,6 @@ public class Main {
         public double maxWalkTime = 10.0;
         public List<TransportType> forbiddenModes = new ArrayList<>();
         public Map<String, Double> modeWeights = new HashMap<>();
-        public int maxIterations = 50000000;
-        public int maxFrontierSize = 100000000;
     }
 
     public static CommandLineArgs parseCommandLineArgs(String[] args) {
@@ -112,10 +107,8 @@ public class Main {
                         }
                     }
                 }
-            } else if (arg.equals("--max-iterations") && i + 1 < args.length) {
-                cmdArgs.maxIterations = Integer.parseInt(args[++i]);
-            } else if (arg.equals("--max-frontier-size") && i + 1 < args.length) {
-                cmdArgs.maxFrontierSize = Integer.parseInt(args[++i]);
+            } else {
+                throw new IllegalArgumentException("Unknown argument: " + arg);
             }
         }
 
