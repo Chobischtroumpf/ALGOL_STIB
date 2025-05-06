@@ -3,6 +3,7 @@ package algo.transit.pathfinding;
 import algo.transit.models.*;
 import algo.transit.utils.QuadTree;
 import algo.transit.enums.TransportType;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
 import java.util.*;
@@ -18,7 +19,8 @@ public class TransitGraph {
     public Map<String, Set<String>> stopGroups = new HashMap<>();
     public static final double SAME_STOP_THRESHOLD = 50.0;
 
-    public record WalkableStop(String stopId, double distanceMeters, int walkTimeMinutes) { }
+    public record WalkableStop(String stopId, double distanceMeters, int walkTimeMinutes) {
+    }
 
     public TransitGraph(Map<String, Stop> stops) {
         this.stops = stops;
@@ -58,16 +60,14 @@ public class TransitGraph {
 
     private void initializeSpatialIndex() {
         spatialIndex = new QuadTree(minLon, minLat, maxLon, maxLat, 0);
-        for (Stop stop : stops.values()) {
-            spatialIndex.insert(stop);
-        }
+        for (Stop stop : stops.values()) spatialIndex.insert(stop);
     }
 
     public void addRouteType(String routeId, String routeType) {
         routeTypes.put(routeId, routeType);
     }
 
-    public void addConnection(Connection connection) {
+    public void addConnection(@NotNull Connection connection) {
         String fromStop = connection.fromStop;
         connectionsByDeparture
                 .computeIfAbsent(fromStop, _ -> new ArrayList<>())
@@ -79,77 +79,62 @@ public class TransitGraph {
         List<Connection> connections = new ArrayList<>();
         Stop currentStop = stops.get(stopId);
 
-        if (currentStop == null) {
-            return connections;
-        }
-
-        // Add direct transit connections from schedule data
-        // We'll search for the next departures from this stop across all routes
-        Map<String, Trip> relevantTrips = new HashMap<>();
+        if (currentStop == null) return connections;
 
         // First, get all the trips that serve this stop
         if (currentStop.trips != null) {
             for (Trip trip : currentStop.trips.values()) {
                 LocalTime departureTimeForStop = trip.getTimeForStop(currentStop);
 
-                // Only consider trips that depart after the current time
-                // and within a reasonable window (4 hours)
-                if (departureTimeForStop != null &&
-                        !departureTimeForStop.isBefore(currentTime) &&
+                // Only consider trips that depart after the current time and within 4 hours
+                if (departureTimeForStop != null && !departureTimeForStop.isBefore(currentTime) &&
                         departureTimeForStop.isBefore(currentTime.plusHours(4))) {
 
-                    relevantTrips.put(trip.tripId, trip);
-                }
-            }
-        }
+                    Route route = trip.getRoute();
+                    if (route == null) continue;
 
-        // Now create connections from these trips
-        for (Trip trip : relevantTrips.values()) {
-            Route route = trip.getRoute();
-            if (route == null) continue;
+                    // Skip forbidden modes
+                    if (preferences.forbiddenModes.contains(route.type)) continue;
 
-            // Skip forbidden modes
-            if (preferences.forbiddenModes.contains(route.type)) continue;
+                    List<Stop> orderedStops = trip.getOrderedStops();
+                    int currentStopIndex = -1;
 
-            List<Stop> orderedStops = trip.getOrderedStops();
-            int currentStopIndex = -1;
+                    // Find index of current stop in this trip
+                    for (int i = 0; i < orderedStops.size(); i++) {
+                        if (orderedStops.get(i).stopId.equals(stopId)) {
+                            currentStopIndex = i;
+                            break;
+                        }
+                    }
 
-            // Find index of current stop in this trip
-            for (int i = 0; i < orderedStops.size(); i++) {
-                if (orderedStops.get(i).stopId.equals(stopId)) {
-                    currentStopIndex = i;
-                    break;
-                }
-            }
+                    // If stop found, create connections to subsequent stops
+                    if (currentStopIndex >= 0 && currentStopIndex < orderedStops.size() - 1) {
+                        // Create connections to all subsequent stops
+                        for (int i = currentStopIndex + 1; i < orderedStops.size(); i++) {
+                            Stop nextStop = orderedStops.get(i);
+                            LocalTime arrivalTime = trip.getTimeForStop(nextStop);
 
-            // If stop found, create connections to subsequent stops
-            if (currentStopIndex >= 0 && currentStopIndex < orderedStops.size() - 1) {
-                LocalTime departureTime = trip.getTimeForStop(currentStop);
+                            if (arrivalTime != null) {
+                                Connection conn = new Connection(
+                                        stopId,
+                                        nextStop.stopId,
+                                        trip.tripId,
+                                        route.routeId,
+                                        route.shortName,
+                                        departureTimeForStop,
+                                        arrivalTime,
+                                        route.type.toString()
+                                );
 
-                // Create connections to all subsequent stops
-                for (int i = currentStopIndex + 1; i < orderedStops.size(); i++) {
-                    Stop nextStop = orderedStops.get(i);
-                    LocalTime arrivalTime = trip.getTimeForStop(nextStop);
-
-                    if (departureTime != null && arrivalTime != null) {
-                        Connection conn = new Connection(
-                                stopId,
-                                nextStop.stopId,
-                                trip.tripId,
-                                route.routeId,
-                                route.shortName,
-                                departureTime,
-                                arrivalTime,
-                                route.type.toString()
-                        );
-
-                        connections.add(conn);
+                                connections.add(conn);
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // Add walking connections
+        // Add walking connections (but check the connection limit)
         if (!preferences.forbiddenModes.contains(TransportType.FOOT)) {
             Set<String> walkableStopIds = new HashSet<>();
             getWalkableStops(stopId, preferences).stream()
@@ -161,10 +146,9 @@ public class TransitGraph {
                         // Prioritize walking to stops with good transit connections
                         boolean hasGoodTransit = stop.routes.values().stream()
                                 .anyMatch(r -> r.type == TransportType.TRAIN || r.type == TransportType.METRO);
-
                         return hasGoodTransit || walkableStopIds.add(walkable.stopId);
                     })
-                    .limit(5)  // Limit walking connections
+                    .limit(5) // Limit to 5 walking connections
                     .map(walkable -> Connection.createWalkingConnection(
                             stopId, walkable.stopId, currentTime, walkable.walkTimeMinutes))
                     .forEach(connections::add);
@@ -173,7 +157,7 @@ public class TransitGraph {
         return connections;
     }
 
-    public List<WalkableStop> getWalkableStops(String stopId, TransitPreference preferences) {
+    public List<WalkableStop> getWalkableStops(String stopId, @NotNull TransitPreference preferences) {
         // Check cache
         String cacheKey = stopId + "-" + preferences.maxWalkingTime + "-" + preferences.walkingSpeed;
         if (walkableStopsCache.containsKey(cacheKey)) return walkableStopsCache.get(cacheKey);

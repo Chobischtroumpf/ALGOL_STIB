@@ -4,6 +4,7 @@ import algo.transit.models.*;
 import algo.transit.services.CSVService;
 import algo.transit.utils.QuadTree;
 import algo.transit.enums.TransportType;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -21,7 +22,7 @@ public class TransitPathfinder {
         this.graph = loadGraphData(csvService);
     }
 
-    private TransitGraph loadGraphData(CSVService csvService) {
+    private @NotNull TransitGraph loadGraphData(@NotNull CSVService csvService) {
         // Load data
         Map<String, Stop> stops = csvService.getStops();
         Map<String, Route> routes = csvService.getRoutes();
@@ -42,7 +43,7 @@ public class TransitPathfinder {
         return transitGraph;
     }
 
-    private void createConnectionsFromTrips(TransitGraph graph, Map<String, algo.transit.models.Trip> trips) {
+    private void createConnectionsFromTrips(TransitGraph graph, @NotNull Map<String, algo.transit.models.Trip> trips) {
         for (algo.transit.models.Trip trip : trips.values()) {
             Route route = trip.getRoute();
             Map<Integer, org.apache.commons.lang3.tuple.Pair<LocalTime, Stop>> stopTimes = trip.getStops();
@@ -83,7 +84,7 @@ public class TransitPathfinder {
         }
     }
 
-    private double calculateHeuristic(String stopId, String goalStopId, TransitPreference preferences) {
+    private double calculateHeuristic(@NotNull String stopId, String goalStopId, TransitPreference preferences) {
         if (stopId.equals(goalStopId)) return 0;
 
         Stop currentStop = graph.getStop(stopId);

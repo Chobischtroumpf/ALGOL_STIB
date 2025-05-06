@@ -1,5 +1,8 @@
 package algo.transit.models;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.time.LocalTime;
 
 public class Connection {
@@ -24,8 +27,9 @@ public class Connection {
         this.mode = mode;
     }
 
-    public static Connection createWalkingConnection(String fromStop, String toStop,
-                                                     LocalTime currentTime, int walkTimeMinutes) {
+    @Contract("_, _, _, _ -> new")
+    public static @NotNull Connection createWalkingConnection(String fromStop, String toStop,
+                                                              LocalTime currentTime, int walkTimeMinutes) {
         return new Connection(
                 fromStop,
                 toStop,

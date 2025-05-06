@@ -7,11 +7,16 @@ import algo.transit.models.Transition;
 import algo.transit.pathfinding.TransitPathfinder;
 import algo.transit.services.CSVService;
 import algo.transit.utils.QuadTree;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Main {
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
@@ -56,19 +61,20 @@ public class Main {
         }
     }
 
-    public static TransitPreference createPreferences(CommandLineArgs args, double distance) {
+    @Contract("_, _ -> new")
+    public static @NotNull TransitPreference createPreferences(CommandLineArgs args, double distance) {
         Map<TransportType, Double> modeWeights = new HashMap<>();
 
         // Set default weights based on distance
-        if (distance > 50000) {
-            System.out.println("Using long-distance weights (distance > 50km)");
+        if (distance > 25000) {
+            System.out.println("Using long-distance weights (distance > 25km)");
             modeWeights.put(TransportType.FOOT, 3.0);    // Discourage walking
             modeWeights.put(TransportType.BUS, 2.0);     // Discourage buses for long trips
             modeWeights.put(TransportType.TRAIN, 0.7);   // Highly prefer trains
             modeWeights.put(TransportType.METRO, 0.9);   // Prefer metro
             modeWeights.put(TransportType.TRAM, 1.0);    // Normal tram weight
         } else if (distance > 10000) {
-            System.out.println("Using medium-distance weights (10km < distance < 50km)");
+            System.out.println("Using medium-distance weights (10km < distance < 25km)");
             modeWeights.put(TransportType.FOOT, 2.0);    // Discourage walking but less so
             modeWeights.put(TransportType.BUS, 1.0);     // Normal bus weight
             modeWeights.put(TransportType.TRAIN, 0.8);   // Prefer trains
@@ -83,7 +89,7 @@ public class Main {
             modeWeights.put(TransportType.TRAM, 0.8);    // Prefer trams for short trips
         }
 
-        // Apply custom weights (override defaults with user preferences)
+        // Override defaults with user preferences
         for (Map.Entry<String, Double> entry : args.modeWeights.entrySet()) {
             try {
                 modeWeights.put(TransportType.valueOf(entry.getKey()), entry.getValue());
@@ -92,9 +98,9 @@ public class Main {
             }
         }
 
-        // Consider reducing max walk time for longer distances
+        // Reduce max walk time for longer distances
         double adjustedMaxWalkTime = args.maxWalkTime;
-        if (distance > 20000) {
+        if (distance > 15000) {
             adjustedMaxWalkTime = Math.min(adjustedMaxWalkTime, 5.0); // Cap walking time for longer trips
             System.out.println("Adjusted max walk time to " + adjustedMaxWalkTime + " minutes for long trip");
         }
@@ -113,7 +119,7 @@ public class Main {
         public double modeSwitchPenalty = 5.0;
     }
 
-    public static CommandLineArgs parseCommandLineArgs(String[] args) {
+    public static @NotNull CommandLineArgs parseCommandLineArgs(String @NotNull [] args) {
         CommandLineArgs cmdArgs = new CommandLineArgs();
 
         if (args.length < 3) {

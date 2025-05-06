@@ -1,6 +1,8 @@
 package algo.transit.utils;
 
 import algo.transit.models.Stop;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,9 +67,9 @@ public class QuadTree {
         return result;
     }
 
-    private boolean inBounds(Stop stop) {
-        return stop.longitude >= minX && stop.longitude <= maxX &&
-                stop.latitude >= minY && stop.latitude <= maxY;
+    @Contract(pure = true)
+    private boolean inBounds(@NotNull Stop stop) {
+        return stop.longitude >= minX && stop.longitude <= maxX && stop.latitude >= minY && stop.latitude <= maxY;
     }
 
     private void split() {
@@ -97,8 +99,7 @@ public class QuadTree {
 
     public static double distance(double lat1, double lon1, double lat2, double lon2) {
         // Create cache key
-        String keyBuilder = String.valueOf(lat1) + ',' + lon1 + '-' + lat2 + ',' + lon2;
-        String key = keyBuilder.intern();
+        String key = String.valueOf(lat1) + ',' + lon1 + '-' + lat2 + ',' + lon2;
 
         // Check cache first
         Double cachedDistance = distanceCache.get(key);

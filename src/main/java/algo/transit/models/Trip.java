@@ -1,14 +1,18 @@
 package algo.transit.models;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Trip {
     public final String tripId;
     public final Route route;
-    public final TreeMap<Integer, Pair<LocalTime, Stop>> stops = new TreeMap<>();
+    private final TreeMap<Integer, Pair<LocalTime, Stop>> stopsBySequence = new TreeMap<>();
+    private final Map<String, Pair<Integer, LocalTime>> stopInfoByStopId = new HashMap<>();
+    private List<Stop> orderedStops = new ArrayList<>();
 
     public Trip(String tripId, Route route) {
         this.tripId = tripId;
@@ -32,38 +36,25 @@ public class Trip {
         return route;
     }
 
-    public Map<Integer, Pair<LocalTime, Stop>> getStops() {
-        return stops;
+    public void addStopTime(int stopSequence, Pair<LocalTime, Stop> stopData) {
+        stopsBySequence.put(stopSequence, stopData);
+        stopInfoByStopId.put(stopData.getRight().stopId, Pair.of(stopSequence, stopData.getLeft()));
+
+        // Maintain ordered stops list
+        if (orderedStops.size() <= stopSequence) while (orderedStops.size() <= stopSequence) orderedStops.add(null);
+        orderedStops.set(stopSequence, stopData.getRight());
     }
 
-    public void addStopTime(int stopSequence, Pair<LocalTime, Stop> stop) {
-        stops.put(stopSequence, stop);
-    }
-
-    public LocalTime getTimeForStop(Stop stop) {
-        for (Pair<LocalTime, Stop> pair : stops.values())
-            if (pair.getRight().equals(stop)) return pair.getLeft();
-        return null;
-    }
-
-    public LocalTime getEndTime() {
-        return stops.get(stops.lastKey()).getLeft();
-    }
-
-    public LocalTime getStartTime() {
-        return stops.get(stops.firstKey()).getLeft();
-    }
-
-    public boolean containsStop(Stop stop) {
-        return stops.values().stream()
-                .map(Pair::getRight)
-                .anyMatch(s -> s.equals(stop));
+    public LocalTime getTimeForStop(@NotNull Stop stop) {
+        Pair<Integer, LocalTime> info = stopInfoByStopId.get(stop.stopId); // O(1) lookup instead of O(n) iteration
+        return info != null ? info.getRight() : null;
     }
 
     public List<Stop> getOrderedStops() {
-        return stops.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(entry -> entry.getValue().getRight())
-                .toList();
+        return orderedStops.stream().filter(Objects::nonNull).collect(Collectors.toList()); // No need to rebuild each time, already maintained
+    }
+
+    public Map<Integer, Pair<LocalTime, Stop>> getStops() {
+        return stopsBySequence;
     }
 }
