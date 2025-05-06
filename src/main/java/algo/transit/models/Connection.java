@@ -30,6 +30,21 @@ public class Connection {
     @Contract("_, _, _, _ -> new")
     public static @NotNull Connection createWalkingConnection(String fromStop, String toStop,
                                                               LocalTime currentTime, int walkTimeMinutes) {
+        // Very short walks are treated as transfers with no time cost
+        if (walkTimeMinutes <= 2) {
+            return new Connection(
+                    fromStop,
+                    toStop,
+                    "",  // No trip ID
+                    "",  // No route ID
+                    "transfer",  // Indicate this is a transfer
+                    currentTime,
+                    currentTime,  // Same arrival time = zero time cost
+                    "FOOT"
+            );
+        }
+
+        // Normal walking connections use actual calculated time
         return new Connection(
                 fromStop,
                 toStop,

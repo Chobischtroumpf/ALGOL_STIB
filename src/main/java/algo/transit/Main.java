@@ -26,17 +26,17 @@ public class Main {
             CommandLineArgs cmdArgs = parseCommandLineArgs(args);
             CSVService csvService = new CSVService();
 
-            // Load basic data first
             System.out.println("Finding path from " + cmdArgs.startStop + " to " + cmdArgs.endStop + " at " + cmdArgs.startTime);
 
-            // Load graph data first to access stops
+            long loadStartTime = System.currentTimeMillis();
             TransitPathfinder pathfinder = new TransitPathfinder(csvService);
+            long loadTime = System.currentTimeMillis() - loadStartTime;
+            System.out.println("Data loading time: " + (loadTime / 1000.0) + " seconds");
 
-            // Get stops from the graph
-            Stop startStop = pathfinder.graph.getStop(cmdArgs.startStop);
-            Stop endStop = pathfinder.graph.getStop(cmdArgs.endStop);
+            Map<String, Stop> stops = pathfinder.getStops();
+            Stop startStop = stops.get(cmdArgs.startStop);
+            Stop endStop = stops.get(cmdArgs.endStop);
 
-            // Calculate the distance if both stops are found
             double distance = 0.0;
             if (startStop != null && endStop != null) {
                 distance = QuadTree.distance(
@@ -49,18 +49,21 @@ public class Main {
             // Create preferences with distance information
             TransitPreference preferences = createPreferences(cmdArgs, distance);
 
+            // Find path
             long startTime = System.currentTimeMillis();
             List<Transition> path = pathfinder.findPath(cmdArgs.startStop, cmdArgs.endStop, cmdArgs.startTime, preferences);
             long executionTime = System.currentTimeMillis() - startTime;
 
-            System.out.println("Execution time: " + (executionTime / 1000.0) + " seconds");
+            System.out.println("Pathfinding time: " + (executionTime / 1000.0) + " seconds");
             pathfinder.printPath(path);
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
             System.err.println("Usage: java -jar transit.jar START_STOP END_STOP START_TIME [OPTIONS]");
         }
     }
 
+    // The rest of the Main class remains unchanged
     @Contract("_, _ -> new")
     public static @NotNull TransitPreference createPreferences(CommandLineArgs args, double distance) {
         Map<TransportType, Double> modeWeights = new HashMap<>();

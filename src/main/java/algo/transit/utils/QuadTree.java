@@ -39,9 +39,7 @@ public class QuadTree {
 
         if (children == null) {
             split();
-            for (Stop existingStop : points) {
-                insertIntoChildren(existingStop);
-            }
+            for (Stop existingStop : points) insertIntoChildren(existingStop);
             points.clear();
         }
 
@@ -53,15 +51,11 @@ public class QuadTree {
         if (!intersectsRadius(lat, lon, radius)) return result;
 
         for (Stop stop : points) {
-            if (distance(lat, lon, stop.latitude, stop.longitude) <= radius) {
-                result.add(stop);
-            }
+            if (distance(lat, lon, stop.latitude, stop.longitude) <= radius) result.add(stop);
         }
 
         if (children != null) {
-            for (QuadTree child : children) {
-                result.addAll(child.findNearby(lat, lon, radius));
-            }
+            for (QuadTree child : children) result.addAll(child.findNearby(lat, lon, radius));
         }
 
         return result;
@@ -85,9 +79,7 @@ public class QuadTree {
     }
 
     private boolean insertIntoChildren(Stop stop) {
-        for (QuadTree child : children) {
-            if (child.insert(stop)) return true;
-        }
+        for (QuadTree child : children) if (child.insert(stop)) return true;
         return false;
     }
 
@@ -118,9 +110,5 @@ public class QuadTree {
                         Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return EARTH_RADIUS * c;
-    }
-
-    public static double distanceSquared(double lat1, double lon1, double lat2, double lon2) {
-        return Math.pow(lat1 - lat2, 2) + Math.pow(lon1 - lon2, 2);
     }
 }

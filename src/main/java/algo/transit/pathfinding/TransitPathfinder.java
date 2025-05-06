@@ -1,9 +1,9 @@
 package algo.transit.pathfinding;
 
+import algo.transit.enums.TransportType;
 import algo.transit.models.*;
 import algo.transit.services.CSVService;
 import algo.transit.utils.QuadTree;
-import algo.transit.enums.TransportType;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
@@ -11,84 +11,259 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class TransitPathfinder {
-    public final TransitGraph graph;
+    private Map<String, Stop> stops;
+    private Map<String, Route> routes;
+    private Map<String, Trip> trips;
+    private QuadTree spatialIndex;
+    private Map<String, String> routeTypes = new HashMap<>();
+    private Map<String, Set<String>> stopGroups = new HashMap<>();
+    private Map<String, List<WalkableStop>> walkableStopsCache = new HashMap<>();
+
+    public static final double SAME_STOP_THRESHOLD = 50.0;
     public int maxIterations = 50000000;
     public static final int MAX_REASONABLE_DURATION = 600;
     public static final int MAX_REASONABLE_WAIT = 60;
     public static final int MAX_FRONTIER_AFTER_PRUNING = 100000;
     public static final int FRONTIER_PRUNING_THRESHOLD = 200000;
 
-    public TransitPathfinder(CSVService csvService) {
-        this.graph = loadGraphData(csvService);
+    public Map<String, Stop> getStops() {
+        return stops;
     }
 
-    private @NotNull TransitGraph loadGraphData(@NotNull CSVService csvService) {
-        // Load data
-        Map<String, Stop> stops = csvService.getStops();
-        Map<String, Route> routes = csvService.getRoutes();
-        Map<String, algo.transit.models.Trip> trips = csvService.getTrips(routes);
+    public record WalkableStop(String stopId, double distanceMeters, int walkTimeMinutes) {
+    }
 
-        // Link data
+    public TransitPathfinder(CSVService csvService) {
+        loadData(csvService);
+        initializeSpatialIndex();
+        initializeStopGroups();
+    }
+
+    private void loadData(CSVService csvService) {
+        this.stops = csvService.getStops();
+        this.routes = csvService.getRoutes();
+        this.trips = csvService.getTrips(routes);
         csvService.linkData(stops, trips);
 
-        // Create graph
-        TransitGraph transitGraph = new TransitGraph(stops);
-
-        // Add route types
-        for (Route route : routes.values()) transitGraph.addRouteType(route.routeId, route.type.toString());
-
-        // Create connections
-        createConnectionsFromTrips(transitGraph, trips);
-
-        return transitGraph;
+        // Store route types for quick lookup
+        for (Route route : routes.values()) routeTypes.put(route.routeId, route.type.toString());
     }
 
-    private void createConnectionsFromTrips(TransitGraph graph, @NotNull Map<String, algo.transit.models.Trip> trips) {
-        for (algo.transit.models.Trip trip : trips.values()) {
-            Route route = trip.getRoute();
-            Map<Integer, org.apache.commons.lang3.tuple.Pair<LocalTime, Stop>> stopTimes = trip.getStops();
+    private void initializeSpatialIndex() {
+        // Calculate bounds
+        double minLat = 90.0, maxLat = -90.0, minLon = 180.0, maxLon = -180.0;
 
-            if (stopTimes.size() < 2 || route == null) continue;
+        if (!stops.isEmpty()) {
+            for (Stop stop : stops.values()) {
+                minLat = Math.min(minLat, stop.latitude);
+                maxLat = Math.max(maxLat, stop.latitude);
+                minLon = Math.min(minLon, stop.longitude);
+                maxLon = Math.max(maxLon, stop.longitude);
+            }
 
-            // Create connections between consecutive stops
-            List<Integer> sequences = new ArrayList<>(stopTimes.keySet());
-            Collections.sort(sequences);
+            // Add padding
+            double latPadding = (maxLat - minLat) * 0.1;
+            double lonPadding = (maxLon - minLon) * 0.1;
+            minLat -= latPadding;
+            maxLat += latPadding;
+            minLon -= lonPadding;
+            maxLon += lonPadding;
+        } else {
+            // Default bounds for empty dataset
+            minLat = 50.0;
+            maxLat = 51.0;
+            minLon = 4.0;
+            maxLon = 5.0;
+        }
 
-            for (int i = 0; i < sequences.size() - 1; i++) {
-                int fromSequence = sequences.get(i);
-                int toSequence = sequences.get(i + 1);
+        // Create and populate spatial index
+        spatialIndex = new QuadTree(minLon, minLat, maxLon, maxLat, 0);
+        for (Stop stop : stops.values()) {
+            spatialIndex.insert(stop);
+        }
+    }
 
-                org.apache.commons.lang3.tuple.Pair<LocalTime, Stop> fromPair = stopTimes.get(fromSequence);
-                org.apache.commons.lang3.tuple.Pair<LocalTime, Stop> toPair = stopTimes.get(toSequence);
+    private void initializeStopGroups() {
+        for (Stop stop : stops.values()) {
+            // Skip if already in a group
+            if (stopGroups.containsKey(stop.stopId)) continue;
 
-                if (fromPair != null && toPair != null) {
-                    LocalTime departureTime = fromPair.getLeft();
-                    LocalTime arrivalTime = toPair.getLeft();
-                    Stop fromStop = fromPair.getRight();
-                    Stop toStop = toPair.getRight();
+            // Create a new group for this stop
+            Set<String> group = new HashSet<>();
+            group.add(stop.stopId);
+            stopGroups.put(stop.stopId, group);
 
-                    Connection connection = new Connection(
-                            fromStop.stopId,
-                            toStop.stopId,
-                            trip.tripId,
-                            route.routeId,
-                            route.shortName,
-                            departureTime,
-                            arrivalTime,
-                            route.type.toString()
-                    );
+            // Find nearby stops efficiently
+            List<Stop> nearbyStops = spatialIndex.findNearby(stop.latitude, stop.longitude, SAME_STOP_THRESHOLD);
 
-                    graph.addConnection(connection);
+            // Add nearby stops to the group
+            for (Stop nearbyStop : nearbyStops) {
+                if (!stop.stopId.equals(nearbyStop.stopId)) {
+                    group.add(nearbyStop.stopId);
+                    stopGroups.put(nearbyStop.stopId, group);
                 }
             }
         }
     }
 
+    private List<Connection> getOutgoingConnections(String stopId, LocalTime currentTime, TransitPreference preferences) {
+        List<Connection> connections = new ArrayList<>();
+        Stop currentStop = stops.get(stopId);
+
+        if (currentStop == null) return connections;
+
+        // Get connections from trips departing from this stop
+        for (Trip trip : currentStop.trips.values()) {
+            LocalTime departureTimeForStop = trip.getTimeForStop(currentStop);
+
+            // Only consider trips that depart after current time and within reasonable wait time
+            if (departureTimeForStop != null && !departureTimeForStop.isBefore(currentTime) &&
+                    departureTimeForStop.isBefore(currentTime.plusMinutes(MAX_REASONABLE_WAIT))) {
+
+                Route route = trip.getRoute();
+                if (route == null) continue;
+
+                // Skip forbidden modes
+                if (preferences.forbiddenModes.contains(route.type)) continue;
+
+                List<Stop> orderedStops = trip.getOrderedStops();
+                int currentStopIndex = -1;
+
+                // Find index of current stop in this trip
+                for (int i = 0; i < orderedStops.size(); i++) {
+                    if (orderedStops.get(i).stopId.equals(stopId)) {
+                        currentStopIndex = i;
+                        break;
+                    }
+                }
+
+                // If stop found, create connections to subsequent stops
+                if (currentStopIndex >= 0 && currentStopIndex < orderedStops.size() - 1) {
+                    // Create connections to next stop only, not all subsequent stops
+                    // This is a key optimization to reduce memory usage
+                    int nextStopIndex = currentStopIndex + 1;
+                    Stop nextStop = orderedStops.get(nextStopIndex);
+                    LocalTime arrivalTime = trip.getTimeForStop(nextStop);
+
+                    if (arrivalTime != null) {
+                        Connection conn = new Connection(
+                                stopId,
+                                nextStop.stopId,
+                                trip.tripId,
+                                route.routeId,
+                                route.shortName,
+                                departureTimeForStop,
+                                arrivalTime,
+                                route.type.toString()
+                        );
+
+                        connections.add(conn);
+                    }
+                }
+            }
+        }
+
+        // Add walking connections
+        if (!preferences.forbiddenModes.contains(TransportType.FOOT)) {
+            // Debug walking preferences
+            // System.out.println("DEBUG: Getting walkable stops from " + currentStop.name +
+            //         " with max time " + preferences.maxWalkingTime + " min, speed " +
+            //         preferences.walkingSpeed + " m/min");
+
+            // Get walkable stops
+            List<WalkableStop> walkableStops = getWalkableStops(stopId, preferences);
+
+            // Debug walkable stops
+            // System.out.println("DEBUG: Found " + walkableStops.size() + " walkable stops");
+
+            for (WalkableStop walkable : walkableStops) {
+                Stop toStop = stops.get(walkable.stopId);
+                if (toStop == null) continue;
+
+                // Skip if we're already at this stop
+                if (stopId.equals(walkable.stopId)) continue;
+
+                // Only add if distance is reasonable
+                if (walkable.distanceMeters > 5 && walkable.distanceMeters <= preferences.walkingSpeed * preferences.maxWalkingTime) {
+                    int walkTimeMinutes = walkable.walkTimeMinutes;
+
+                    // Create a walking connection with accurate time
+                    Connection walkingConn = Connection.createWalkingConnection(stopId, walkable.stopId, currentTime, walkTimeMinutes);
+
+                    connections.add(walkingConn);
+
+                    // Debug connection
+                    // System.out.println("DEBUG: Created walking connection from " +
+                    //         currentStop.name + " to " + toStop.name + ": " +
+                    //         walkable.distanceMeters + "m, " + walkTimeMinutes + " min");
+                }
+            }
+        }
+
+        return connections;
+    }
+
+    // Find walkable stops from a given stop
+    public List<WalkableStop> getWalkableStops(String stopId, @NotNull TransitPreference preferences) {
+        // Check cache
+        String cacheKey = stopId + "-" + preferences.maxWalkingTime + "-" + preferences.walkingSpeed;
+        if (walkableStopsCache.containsKey(cacheKey)) return walkableStopsCache.get(cacheKey);
+
+        List<WalkableStop> walkableStops = new ArrayList<>();
+        Stop fromStop = stops.get(stopId);
+
+        if (fromStop == null) return walkableStops;
+
+        // Calculate max walking distance in meters
+        double maxWalkDistanceMeters = preferences.walkingSpeed * preferences.maxWalkingTime;
+
+        // Find stops within walking distance using spatial index
+        List<Stop> nearbyStops = spatialIndex.findNearby(
+                fromStop.latitude,
+                fromStop.longitude,
+                maxWalkDistanceMeters
+        );
+
+        for (Stop toStop : nearbyStops) {
+            // Skip self
+            if (toStop.stopId.equals(stopId)) continue;
+
+            // Calculate actual distance
+            double distanceMeters = QuadTree.distance(
+                    fromStop.latitude, fromStop.longitude,
+                    toStop.latitude, toStop.longitude
+            );
+
+            // Only consider stops within actual walking distance
+            if (distanceMeters <= maxWalkDistanceMeters) {
+                // Calculate walk time based on actual distance and walking speed
+                // Use exact calculated time with no minimum
+                double exactWalkTimeMinutes = distanceMeters / preferences.walkingSpeed;
+                int walkTimeMinutes = (int) Math.ceil(exactWalkTimeMinutes);
+
+                if (walkTimeMinutes <= preferences.maxWalkingTime) {
+                    walkableStops.add(new WalkableStop(toStop.stopId, distanceMeters, walkTimeMinutes));
+                }
+            }
+        }
+
+        // Sort by distance
+        // Not needed, this adds 28 seconds
+        // walkableStops.sort(Comparator.comparingDouble(WalkableStop::distanceMeters));
+
+        // Limit to 5 walkable stops
+        if (walkableStops.size() > 5) walkableStops = walkableStops.subList(0, 5);
+
+        // Cache the result
+        walkableStopsCache.put(cacheKey, walkableStops);
+        return walkableStops;
+    }
+
     private double calculateHeuristic(@NotNull String stopId, String goalStopId, TransitPreference preferences) {
         if (stopId.equals(goalStopId)) return 0;
 
-        Stop currentStop = graph.getStop(stopId);
-        Stop goalStop = graph.getStop(goalStopId);
+        Stop currentStop = stops.get(stopId);
+        Stop goalStop = stops.get(goalStopId);
         if (currentStop == null || goalStop == null) return 0;
 
         // Calculate straight-line distance
@@ -177,7 +352,7 @@ public class TransitPathfinder {
 
     public List<Transition> findPath(String startStopId, String goalStopId, LocalTime startTime,
                                      TransitPreference preferences) {
-        if (!graph.getStops().containsKey(startStopId) || !graph.getStops().containsKey(goalStopId)) return null;
+        if (!stops.containsKey(startStopId) || !stops.containsKey(goalStopId)) return null;
 
         // Calculate initial heuristic
         double initialHeuristic = calculateHeuristic(startStopId, goalStopId, preferences);
@@ -196,8 +371,8 @@ public class TransitPathfinder {
         int iterations = 0;
 
         // Estimate direct trip time
-        Stop startStop = graph.getStop(startStopId);
-        Stop goalStop = graph.getStop(goalStopId);
+        Stop startStop = stops.get(startStopId);
+        Stop goalStop = stops.get(goalStopId);
         double directDistanceMeters = 0;
 
         if (startStop != null && goalStop != null) {
@@ -234,7 +409,7 @@ public class TransitPathfinder {
             visited.put(stateKey, current.cost);
 
             // Get possible connections
-            List<Connection> connections = graph.getOutgoingConnections(current.stopId, current.time, preferences);
+            List<Connection> connections = getOutgoingConnections(current.stopId, current.time, preferences);
 
             // Process connections
             for (Connection conn : connections) {
@@ -272,6 +447,8 @@ public class TransitPathfinder {
                 // Apply mode weight
                 double modeWeight = getPreferenceWeight(preferences, mode);
                 transitionCost *= modeWeight;
+
+                if (conn.mode.equals("FOOT") && conn.routeName.equals("transfer")) transitionCost = 0.5;
 
                 // Apply mode switching penalty
                 if (!current.lastMode.equals("NONE") && !current.lastMode.equals(mode)) {
@@ -339,9 +516,7 @@ public class TransitPathfinder {
     }
 
     private boolean pathContainsStop(List<Transition> path, String stopId) {
-        for (Transition t : path) {
-            if (t.toStop.equals(stopId)) return true;
-        }
+        for (Transition t : path) if (t.toStop.equals(stopId)) return true;
         return false;
     }
 
@@ -415,8 +590,8 @@ public class TransitPathfinder {
             Transition first = segment.getFirst();
             Transition last = segment.getLast();
 
-            Stop fromStop = graph.getStop(first.fromStop);
-            Stop toStop = graph.getStop(last.toStop);
+            Stop fromStop = stops.get(first.fromStop);
+            Stop toStop = stops.get(last.toStop);
 
             String fromStopName = (fromStop != null) ? formatStopName(fromStop.name) : first.fromStop;
             String toStopName = (toStop != null) ? formatStopName(toStop.name) : last.toStop;
