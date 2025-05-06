@@ -31,28 +31,4 @@ public class Route {
     public int hashCode() {
         return routeId != null ? routeId.hashCode() : 0;
     }
-
-    public String getRouteId() {
-        return routeId;
-    }
-
-    public String getShortName() {
-        return shortName;
-    }
-
-    public String getLongName() {
-        return longName;
-    }
-
-    public TransportType getType() {
-        return type;
-    }
-
-    public Set<Stop> getPossibleStops() {
-        return possibleStops;
-    }
-
-    public void addPossibleStop(Stop stop) {
-        possibleStops.add(stop);
-    }
 }

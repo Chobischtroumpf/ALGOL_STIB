@@ -121,7 +121,7 @@ public class CSVService {
             try {
                 System.out.println("Reading routes from " + path.toString());
                 for (Route route : readCSV(path, row -> new Route(row[0].intern(), row[1].intern(), row[2].intern(), row[3].intern()))) {
-                    routes.put(route.getRouteId(), route);
+                    routes.put(route.routeId, route);
                     routeCount++;
                 }
             } catch (Exception e) {
@@ -194,9 +194,9 @@ public class CSVService {
 
                         Route route = trip.getRoute();
                         if (route != null) {
-                            route.addPossibleStop(stop);
-                            stop.routes.put(route.getRouteId(), route);
-                            stop.trips.put(trip.getTripId(), trip);
+                            route.possibleStops.add(stop);
+                            stop.routes.put(route.routeId, route);
+                            stop.trips.put(trip.tripId, trip);
                         }
                     }
                 }
@@ -220,7 +220,7 @@ public class CSVService {
                     Route route = routes.get(row[1]);
                     return new Trip(row[0], route);
                 })) {
-                    trips.put(trip.getTripId(), trip);
+                    trips.put(trip.tripId, trip);
                     tripCount++;
                 }
             } catch (Exception e) {

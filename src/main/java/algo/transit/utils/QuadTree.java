@@ -97,7 +97,8 @@ public class QuadTree {
 
     public static double distance(double lat1, double lon1, double lat2, double lon2) {
         // Create cache key
-        String key = lat1 + "," + lon1 + "-" + lat2 + "," + lon2;
+        String keyBuilder = String.valueOf(lat1) + ',' + lon1 + '-' + lat2 + ',' + lon2;
+        String key = keyBuilder.intern();
 
         // Check cache first
         Double cachedDistance = distanceCache.get(key);
@@ -116,5 +117,9 @@ public class QuadTree {
                         Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return EARTH_RADIUS * c;
+    }
+
+    public static double distanceSquared(double lat1, double lon1, double lat2, double lon2) {
+        return Math.pow(lat1 - lat2, 2) + Math.pow(lon1 - lon2, 2);
     }
 }

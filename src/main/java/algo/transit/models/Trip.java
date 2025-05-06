@@ -27,10 +27,6 @@ public class Trip {
         return tripId != null ? tripId.hashCode() : 0;
     }
 
-    public String getTripId() {
-        return tripId;
-    }
-
     public Route getRoute() {
         if (route == null) throw new NullPointerException("Route is not set");
         return route;
