@@ -1,18 +1,15 @@
 package algo.transit.models;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Trip {
     public final String tripId;
     public final Route route;
-    private final TreeMap<Integer, Pair<LocalTime, Stop>> stopsBySequence = new TreeMap<>();
-    private final Map<String, Pair<Integer, LocalTime>> stopInfoByStopId = new HashMap<>();
-    private List<Stop> orderedStops = new ArrayList<>();
+    private final ArrayList<Stop> stops = new ArrayList<>();
+    private final ArrayList<LocalTime> times = new ArrayList<>();
 
     public Trip(String tripId, Route route) {
         this.tripId = tripId;
@@ -36,25 +33,34 @@ public class Trip {
         return route;
     }
 
-    public void addStopTime(int stopSequence, Pair<LocalTime, Stop> stopData) {
-        stopsBySequence.put(stopSequence, stopData);
-        stopInfoByStopId.put(stopData.getRight().stopId, Pair.of(stopSequence, stopData.getLeft()));
+    public void addStopTime(int stopSequence, @NotNull LocalTime time, @NotNull Stop stop) {
+        while (stops.size() <= stopSequence) {
+            stops.add(null);
+            times.add(null);
+        }
 
-        // Maintain ordered stops list
-        if (orderedStops.size() <= stopSequence) while (orderedStops.size() <= stopSequence) orderedStops.add(null);
-        orderedStops.set(stopSequence, stopData.getRight());
+        stops.set(stopSequence, stop);
+        times.set(stopSequence, time);
+
+        if (route != null) {
+            route.possibleStops.add(stop);
+            stop.routes.put(route.routeId, route);
+            stop.trips.put(tripId, this);
+        }
     }
 
     public LocalTime getTimeForStop(@NotNull Stop stop) {
-        Pair<Integer, LocalTime> info = stopInfoByStopId.get(stop.stopId); // O(1) lookup instead of O(n) iteration
-        return info != null ? info.getRight() : null;
+        // Reference equality
+        for (int i = 0; i < stops.size(); i++) if (stops.get(i) == stop) return times.get(i);
+        // Fall back to equals
+        for (int i = 0; i < stops.size(); i++) if (stop.equals(stops.get(i))) return times.get(i);
+        return null;
     }
 
     public List<Stop> getOrderedStops() {
-        return orderedStops.stream().filter(Objects::nonNull).collect(Collectors.toList()); // No need to rebuild each time, already maintained
-    }
-
-    public Map<Integer, Pair<LocalTime, Stop>> getStops() {
-        return stopsBySequence;
+        // Create a list with only non-null stops
+        List<Stop> result = new ArrayList<>(stops.size());
+        for (Stop stop : stops) if (stop != null) result.add(stop);
+        return result;
     }
 }

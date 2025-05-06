@@ -69,7 +69,7 @@ public class CSVService {
         public final CSVReader reader;
         public String[] next = null;
 
-        public CSVIterator(Path filePath, FromCSV<T> converter) throws IOException, CsvException {
+        public CSVIterator(@NotNull Path filePath, FromCSV<T> converter) throws IOException, CsvException {
             this.converter = converter;
             this.reader = new CSVReader(new BufferedReader(new FileReader(filePath.toString()), 8192 * 16));
             reader.readNextSilently(); // discard header
@@ -189,7 +189,7 @@ public class CSVService {
                     Trip trip = trips.get(tripId);
 
                     if (stop != null && trip != null) {
-                        trip.addStopTime(stopSequence, new ImmutablePair<>(departureTime, stop));
+                        trip.addStopTime(stopSequence, departureTime, stop);
                         stopTimeCount++;
 
                         Route route = trip.getRoute();
@@ -201,6 +201,7 @@ public class CSVService {
                     }
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 System.err.println("Error reading stop times from " + path + ": " + e.getMessage());
             }
         }
@@ -232,7 +233,7 @@ public class CSVService {
         return trips;
     }
 
-    public static LocalTime checkTime(String time) {
+    public static LocalTime checkTime(@NotNull String time) {
         String[] timeArr = time.split(":");
 
         if (timeArr.length != 3) {

@@ -4,6 +4,7 @@ import algo.transit.enums.TransportType;
 import algo.transit.models.*;
 import algo.transit.services.CSVService;
 import algo.transit.utils.QuadTree;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
@@ -12,12 +13,9 @@ import java.util.*;
 
 public class TransitPathfinder {
     private Map<String, Stop> stops;
-    private Map<String, Route> routes;
-    private Map<String, Trip> trips;
     private QuadTree spatialIndex;
-    private Map<String, String> routeTypes = new HashMap<>();
-    private Map<String, Set<String>> stopGroups = new HashMap<>();
-    private Map<String, List<WalkableStop>> walkableStopsCache = new HashMap<>();
+    private final Map<String, Set<String>> stopGroups = new HashMap<>();
+    private final Map<String, List<WalkableStop>> walkableStopsCache = new HashMap<>();
 
     public static final double SAME_STOP_THRESHOLD = 50.0;
     public int maxIterations = 50000000;
@@ -39,14 +37,11 @@ public class TransitPathfinder {
         initializeStopGroups();
     }
 
-    private void loadData(CSVService csvService) {
+    private void loadData(@NotNull CSVService csvService) {
         this.stops = csvService.getStops();
-        this.routes = csvService.getRoutes();
-        this.trips = csvService.getTrips(routes);
+        Map<String, Route> routes = csvService.getRoutes();
+        Map<String, Trip> trips = csvService.getTrips(routes);
         csvService.linkData(stops, trips);
-
-        // Store route types for quick lookup
-        for (Route route : routes.values()) routeTypes.put(route.routeId, route.type.toString());
     }
 
     private void initializeSpatialIndex() {
@@ -106,7 +101,7 @@ public class TransitPathfinder {
         }
     }
 
-    private List<Connection> getOutgoingConnections(String stopId, LocalTime currentTime, TransitPreference preferences) {
+    private @NotNull List<Connection> getOutgoingConnections(String stopId, LocalTime currentTime, TransitPreference preferences) {
         List<Connection> connections = new ArrayList<>();
         Stop currentStop = stops.get(stopId);
 
@@ -165,16 +160,7 @@ public class TransitPathfinder {
 
         // Add walking connections
         if (!preferences.forbiddenModes.contains(TransportType.FOOT)) {
-            // Debug walking preferences
-            // System.out.println("DEBUG: Getting walkable stops from " + currentStop.name +
-            //         " with max time " + preferences.maxWalkingTime + " min, speed " +
-            //         preferences.walkingSpeed + " m/min");
-
-            // Get walkable stops
             List<WalkableStop> walkableStops = getWalkableStops(stopId, preferences);
-
-            // Debug walkable stops
-            // System.out.println("DEBUG: Found " + walkableStops.size() + " walkable stops");
 
             for (WalkableStop walkable : walkableStops) {
                 Stop toStop = stops.get(walkable.stopId);
@@ -189,13 +175,7 @@ public class TransitPathfinder {
 
                     // Create a walking connection with accurate time
                     Connection walkingConn = Connection.createWalkingConnection(stopId, walkable.stopId, currentTime, walkTimeMinutes);
-
                     connections.add(walkingConn);
-
-                    // Debug connection
-                    // System.out.println("DEBUG: Created walking connection from " +
-                    //         currentStop.name + " to " + toStop.name + ": " +
-                    //         walkable.distanceMeters + "m, " + walkTimeMinutes + " min");
                 }
             }
         }
@@ -246,10 +226,6 @@ public class TransitPathfinder {
                 }
             }
         }
-
-        // Sort by distance
-        // Not needed, this adds 28 seconds
-        // walkableStops.sort(Comparator.comparingDouble(WalkableStop::distanceMeters));
 
         // Limit to 5 walkable stops
         if (walkableStops.size() > 5) walkableStops = walkableStops.subList(0, 5);
@@ -314,7 +290,7 @@ public class TransitPathfinder {
         return Math.min(walkingTimeEstimate, bestTransitTimeEstimate);
     }
 
-    private double estimateTransitTime(Stop fromStop, Stop toStop, String routeId) {
+    private double estimateTransitTime(@NotNull Stop fromStop, @NotNull Stop toStop, String routeId) {
         // Look for trips that contain both stops
         Set<String> commonTrips = new HashSet<>(fromStop.trips.keySet());
         commonTrips.retainAll(toStop.trips.keySet());
@@ -341,7 +317,7 @@ public class TransitPathfinder {
         return bestTime;
     }
 
-    private double getPreferenceWeight(TransitPreference preferences, String mode) {
+    private double getPreferenceWeight(@NotNull TransitPreference preferences, String mode) {
         try {
             TransportType type = TransportType.valueOf(mode);
             return preferences.modeWeights.getOrDefault(type, 1.0);
@@ -395,38 +371,38 @@ public class TransitPathfinder {
 
             // Skip states with unreasonable costs
             assert current != null;
-            if (current.cost > maxReasonableCost) continue;
+            if (current.cost() > maxReasonableCost) continue;
 
             // Check if goal reached
-            if (current.stopId.equals(goalStopId)) return current.path;
+            if (current.stopId().equals(goalStopId)) return current.path();
 
             // Skip if we've found a better path to this state
-            String lastMode = current.path.isEmpty() ? "NONE" : current.path.getLast().mode;
-            String stateKey = current.stopId + ":" + current.time + ":" + lastMode;
+            String lastMode = current.path().isEmpty() ? "NONE" : current.path().getLast().mode();
+            String stateKey = current.stopId() + ":" + current.time() + ":" + lastMode;
 
-            if (visited.containsKey(stateKey) && visited.get(stateKey) <= current.cost) continue;
+            if (visited.containsKey(stateKey) && visited.get(stateKey) <= current.cost()) continue;
 
-            visited.put(stateKey, current.cost);
+            visited.put(stateKey, current.cost());
 
             // Get possible connections
-            List<Connection> connections = getOutgoingConnections(current.stopId, current.time, preferences);
+            List<Connection> connections = getOutgoingConnections(current.stopId(), current.time(), preferences);
 
             // Process connections
             for (Connection conn : connections) {
-                String mode = conn.mode;
+                String mode = conn.mode();
 
                 // Skip forbidden modes
                 if (isForbiddenMode(preferences, mode)) continue;
 
                 // Skip already visited stops (avoid cycles)
-                if (pathContainsStop(current.path, conn.toStop)) continue;
+                if (pathContainsStop(current.path(), conn.toStop())) continue;
 
                 // Calculate times using actual schedule data
-                LocalTime departureTime = conn.departureTime;
-                LocalTime arrivalTime = conn.arrivalTime;
+                LocalTime departureTime = conn.departureTime();
+                LocalTime arrivalTime = conn.arrivalTime();
 
                 // Calculate wait and travel times
-                long waitTime = Math.max(0, current.time.until(departureTime, ChronoUnit.MINUTES));
+                long waitTime = Math.max(0, current.time().until(departureTime, ChronoUnit.MINUTES));
 
                 // Skip unreasonable waits
                 if (waitTime > MAX_REASONABLE_WAIT) continue;
@@ -448,12 +424,12 @@ public class TransitPathfinder {
                 double modeWeight = getPreferenceWeight(preferences, mode);
                 transitionCost *= modeWeight;
 
-                if (conn.mode.equals("FOOT") && conn.routeName.equals("transfer")) transitionCost = 0.5;
+                if (conn.mode().equals("FOOT") && conn.routeName().equals("transfer")) transitionCost = 0.5;
 
                 // Apply mode switching penalty
-                if (!current.lastMode.equals("NONE") && !current.lastMode.equals(mode)) {
+                if (!current.lastMode().equals("NONE") && !current.lastMode().equals(mode)) {
                     // Add a higher penalty for certain mode switches
-                    if (current.lastMode.equals("TRAIN")) {
+                    if (current.lastMode().equals("TRAIN")) {
                         // Higher penalty for getting off a train (obviously)
                         transitionCost += preferences.modeSwitchPenalty * 1.5;
                     } else {
@@ -462,8 +438,8 @@ public class TransitPathfinder {
                 }
 
                 Transition transition = Transition.fromConnection(conn, transitionCost);
-                double newHeuristic = calculateHeuristic(conn.toStop, goalStopId, preferences);
-                State newState = current.createSuccessor(conn.toStop, arrivalTime, transitionCost, transition, newHeuristic);
+                double newHeuristic = calculateHeuristic(conn.toStop(), goalStopId, preferences);
+                State newState = current.createSuccessor(conn.toStop(), arrivalTime, transitionCost, transition, newHeuristic);
 
                 frontier.add(newState);
             }
@@ -473,13 +449,13 @@ public class TransitPathfinder {
         return null;
     }
 
-    private PriorityQueue<State> pruneFrontier(PriorityQueue<State> frontier) {
+    private @NotNull PriorityQueue<State> pruneFrontier(@NotNull PriorityQueue<State> frontier) {
         Map<String, State> bestStates = new HashMap<>();
         Set<State> addedStates = new HashSet<>(); // Track states we've added
 
         // Group by destination stop (keep best state for each stop)
         for (State state : frontier) {
-            String key = state.stopId;
+            String key = state.stopId();
             if (!bestStates.containsKey(key) || bestStates.get(key).getTotalCost() > state.getTotalCost()) {
                 bestStates.put(key, state);
             }
@@ -506,7 +482,7 @@ public class TransitPathfinder {
         return prunedFrontier;
     }
 
-    private boolean isForbiddenMode(TransitPreference preferences, String mode) {
+    private boolean isForbiddenMode(@NotNull TransitPreference preferences, String mode) {
         try {
             TransportType type = TransportType.valueOf(mode);
             return preferences.forbiddenModes.contains(type);
@@ -515,12 +491,13 @@ public class TransitPathfinder {
         }
     }
 
-    private boolean pathContainsStop(List<Transition> path, String stopId) {
-        for (Transition t : path) if (t.toStop.equals(stopId)) return true;
+    @Contract(pure = true)
+    private boolean pathContainsStop(@NotNull List<Transition> path, String stopId) {
+        for (Transition t : path) if (t.toStop().equals(stopId)) return true;
         return false;
     }
 
-    public static String formatStopName(String stopName) {
+    public static @NotNull String formatStopName(@NotNull String stopName) {
         // Remove prefix like "STIB-", "DELIJN-", etc.
         String name = stopName.replaceAll("^(STIB-|DELIJN-|SNCB-|TEC-)", "");
 
@@ -561,15 +538,15 @@ public class TransitPathfinder {
         // Group transitions by route
         List<List<Transition>> routeSegments = new ArrayList<>();
         List<Transition> currentSegment = new ArrayList<>();
-        currentSegment.add(path.get(0));
+        currentSegment.add(path.getFirst());
 
         // Group sequential transitions with the same route
         for (int i = 1; i < path.size(); i++) {
             Transition prev = path.get(i - 1);
             Transition curr = path.get(i);
 
-            boolean sameRoute = prev.route.equals(curr.route) && prev.mode.equals(curr.mode);
-            boolean isWalking = curr.mode.equals("FOOT");
+            boolean sameRoute = prev.route().equals(curr.route()) && prev.mode().equals(curr.mode());
+            boolean isWalking = curr.mode().equals("FOOT");
 
             // Don't group walking segments or different routes
             if (!sameRoute || isWalking) {
@@ -590,18 +567,18 @@ public class TransitPathfinder {
             Transition first = segment.getFirst();
             Transition last = segment.getLast();
 
-            Stop fromStop = stops.get(first.fromStop);
-            Stop toStop = stops.get(last.toStop);
+            Stop fromStop = stops.get(first.fromStop());
+            Stop toStop = stops.get(last.toStop());
 
-            String fromStopName = (fromStop != null) ? formatStopName(fromStop.name) : first.fromStop;
-            String toStopName = (toStop != null) ? formatStopName(toStop.name) : last.toStop;
+            String fromStopName = (fromStop != null) ? formatStopName(fromStop.name) : first.fromStop();
+            String toStopName = (toStop != null) ? formatStopName(toStop.name) : last.toStop();
 
-            String routeInfo = first.route.isEmpty() ? "" : " " + first.route;
+            String routeInfo = first.route().isEmpty() ? "" : " " + first.route();
 
             System.out.println(
-                    "Take " + first.mode + routeInfo +
-                            " from " + fromStopName + " (" + first.departure + ")" +
-                            " to " + toStopName + " (" + last.arrival + ")"
+                    "Take " + first.mode() + routeInfo +
+                            " from " + fromStopName + " (" + first.departure() + ")" +
+                            " to " + toStopName + " (" + last.arrival() + ")"
             );
         }
     }

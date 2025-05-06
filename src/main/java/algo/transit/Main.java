@@ -59,7 +59,6 @@ public class Main {
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
-            System.err.println("Usage: java -jar transit.jar START_STOP END_STOP START_TIME [OPTIONS]");
         }
     }
 

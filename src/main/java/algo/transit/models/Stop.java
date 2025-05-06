@@ -1,7 +1,6 @@
 package algo.transit.models;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Stop {
     public final String stopId;
@@ -25,8 +24,7 @@ public class Stop {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         Stop stop = (Stop) obj;
-        return Double.compare(stop.latitude, latitude) == 0 &&
-                Double.compare(stop.longitude, longitude) == 0;
+        return Objects.equals(stopId, stop.stopId);
     }
 
     @Override
