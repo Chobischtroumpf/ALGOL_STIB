@@ -19,7 +19,13 @@ public class QuadTree {
     public QuadTree[] children;
     private static final Map<String, Double> distanceCache = new ConcurrentHashMap<>(10000);
 
-    public QuadTree(double minX, double minY, double maxX, double maxY, int depth) {
+    public QuadTree(
+            double minX,
+            double minY,
+            double maxX,
+            double maxY,
+            int depth
+    ) {
         this.minX = minX;
         this.minY = minY;
         this.maxX = maxX;

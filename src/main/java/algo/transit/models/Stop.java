@@ -10,7 +10,12 @@ public class Stop {
     public final Map<String, Route> routes;
     public final Map<String, Trip> trips;
 
-    public Stop(String stopId, String name, double latitude, double longitude) {
+    public Stop(
+            String stopId,
+            String name,
+            double latitude,
+            double longitude
+    ) {
         this.stopId = stopId;
         this.name = name;
         this.latitude = latitude;

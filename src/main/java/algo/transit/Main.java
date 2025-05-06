@@ -1,13 +1,11 @@
 package algo.transit;
 
 import algo.transit.enums.TransportType;
-import algo.transit.models.Stop;
-import algo.transit.models.TransitPreference;
-import algo.transit.models.Transition;
-import algo.transit.pathfinding.TransitPathfinder;
+import algo.transit.models.*;
+import algo.transit.pathfinders.DPathfinder;
 import algo.transit.services.CSVService;
 import algo.transit.utils.QuadTree;
-import org.jetbrains.annotations.Contract;
+import algo.transit.visualizers.DVisualizer;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
@@ -29,15 +27,17 @@ public class Main {
             System.out.println("Finding path from " + cmdArgs.startStop + " to " + cmdArgs.endStop + " at " + cmdArgs.startTime);
 
             long loadStartTime = System.currentTimeMillis();
-            TransitPathfinder pathfinder = new TransitPathfinder(csvService);
+            Map<String, Route> routes = csvService.getRoutes();
+            Map<String, Stop> stops = csvService.getStops();
+            Map<String, Trip> trips = csvService.getTrips(routes);
+            csvService.linkData(stops, trips);
             long loadTime = System.currentTimeMillis() - loadStartTime;
             System.out.println("Data loading time: " + (loadTime / 1000.0) + " seconds");
 
-            Map<String, Stop> stops = pathfinder.getStops();
             Stop startStop = stops.get(cmdArgs.startStop);
             Stop endStop = stops.get(cmdArgs.endStop);
 
-            double distance = 0.0;
+            double distance;
             if (startStop != null && endStop != null) {
                 distance = QuadTree.distance(
                         startStop.latitude, startStop.longitude,
@@ -46,61 +46,43 @@ public class Main {
                 System.out.println("Distance between stops: " + distance + " meters");
             }
 
-            // Create preferences with distance information
-            TransitPreference preferences = createPreferences(cmdArgs, distance);
+            // Create preferences
+            TransitPreference preferences = new TransitPreference(
+                    cmdArgs.walkingSpeed,
+                    cmdArgs.maxWalkTime,
+                    cmdArgs.modeWeights,
+                    cmdArgs.forbiddenModes,
+                    cmdArgs.modeSwitchPenalty,
+                    cmdArgs.maxTransfers
+            );
+
+            // Initialize pathfinder
+            DPathfinder dPathfinder = new DPathfinder(stops);
 
             // Find path
             long startTime = System.currentTimeMillis();
-            List<Transition> path = pathfinder.findPath(cmdArgs.startStop, cmdArgs.endStop, cmdArgs.startTime, preferences);
+            List<Transition> path = dPathfinder.findPath(cmdArgs.startStop, cmdArgs.endStop, cmdArgs.startTime, preferences);
             long executionTime = System.currentTimeMillis() - startTime;
 
             System.out.println("Pathfinding time: " + (executionTime / 1000.0) + " seconds");
-            pathfinder.printPath(path);
+            dPathfinder.printPath(path);
+
+            // If visualization was enabled, wait for the user to close the window
+            if (cmdArgs.visualize) {
+                PathfindingRecorder recorder = dPathfinder.recorder;
+
+                // Create and configure the visualizer
+                DVisualizer visualizer = new DVisualizer(stops);
+                visualizer.setAlgorithmData(recorder);
+                visualizer.setVisible(true);
+
+                System.out.println("Visualization window is open. Close it to exit the program.");
+                visualizer.waitForCompletion();
+            }
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
         }
-    }
-
-    // The rest of the Main class remains unchanged
-    @Contract("_, _ -> new")
-    public static @NotNull TransitPreference createPreferences(CommandLineArgs args, double distance) {
-        Map<TransportType, Double> modeWeights = new HashMap<>();
-
-        // Set default weights based on distance
-        if (distance > 25000) {
-            System.out.println("Using long-distance weights (distance > 25km)");
-            modeWeights.put(TransportType.FOOT, 3.0);    // Discourage walking
-            modeWeights.put(TransportType.BUS, 2.0);     // Discourage buses for long trips
-            modeWeights.put(TransportType.TRAIN, 0.7);   // Highly prefer trains
-            modeWeights.put(TransportType.METRO, 0.9);   // Prefer metro
-            modeWeights.put(TransportType.TRAM, 1.0);    // Normal tram weight
-        } else if (distance > 10000) {
-            System.out.println("Using medium-distance weights (10km < distance < 25km)");
-            modeWeights.put(TransportType.FOOT, 2.0);    // Discourage walking but less so
-            modeWeights.put(TransportType.BUS, 1.0);     // Normal bus weight
-            modeWeights.put(TransportType.TRAIN, 0.8);   // Prefer trains
-            modeWeights.put(TransportType.METRO, 0.8);   // Prefer metro
-            modeWeights.put(TransportType.TRAM, 0.9);    // Slightly prefer trams
-        } else {
-            System.out.println("Using short-distance weights (distance < 10km)");
-            modeWeights.put(TransportType.FOOT, 1.0);    // Walking is fine for short distances
-            modeWeights.put(TransportType.BUS, 1.0);     // Normal bus weight
-            modeWeights.put(TransportType.TRAIN, 1.2);   // Slightly discourage trains (overkill for short trips)
-            modeWeights.put(TransportType.METRO, 0.9);   // Slightly prefer metro
-            modeWeights.put(TransportType.TRAM, 0.8);    // Prefer trams for short trips
-        }
-
-        // Override defaults with user preferences
-        for (Map.Entry<String, Double> entry : args.modeWeights.entrySet()) {
-            try {
-                modeWeights.put(TransportType.valueOf(entry.getKey()), entry.getValue());
-            } catch (IllegalArgumentException e) {
-                System.err.println("Invalid transport type: " + entry.getKey() + ". Skipping.");
-            }
-        }
-        
-        return new TransitPreference(args.walkingSpeed, args.maxWalkTime, modeWeights, args.forbiddenModes, args.modeSwitchPenalty);
     }
 
     public static class CommandLineArgs {
@@ -110,8 +92,10 @@ public class Main {
         public double walkingSpeed = 80.0;
         public double maxWalkTime = 10.0;
         public List<TransportType> forbiddenModes = new ArrayList<>();
-        public Map<String, Double> modeWeights = new HashMap<>();
+        public Map<TransportType, Double> modeWeights = new HashMap<>();
         public double modeSwitchPenalty = 5.0;
+        public int maxTransfers = 50;
+        public boolean visualize = false;
     }
 
     public static @NotNull CommandLineArgs parseCommandLineArgs(String @NotNull [] args) {
@@ -152,7 +136,7 @@ public class Main {
                     String[] parts = weightSpec.split(":");
                     if (parts.length == 2) {
                         try {
-                            cmdArgs.modeWeights.put(parts[0], Double.parseDouble(parts[1]));
+                            cmdArgs.modeWeights.put(TransportType.valueOf(parts[0]), Double.parseDouble(parts[1]));
                         } catch (NumberFormatException e) {
                             System.err.println("Invalid weight format: " + weightSpec + ". Expected format: mode:weight");
                         } catch (IllegalArgumentException e) {
@@ -162,6 +146,10 @@ public class Main {
                 }
             } else if (arg.equals("--mode-switch-penalty") && i + 1 < args.length) {
                 cmdArgs.modeSwitchPenalty = Double.parseDouble(args[++i]);
+            } else if (arg.equals("--max-transfers") && i + 1 < args.length) {
+                cmdArgs.maxTransfers = Integer.parseInt(args[++i]);
+            } else if (arg.equals("--visualize")) {
+                cmdArgs.visualize = true;
             } else if (arg.equals("--help")) {
                 System.out.println("Usage: java -jar transit.jar START_STOP END_STOP START_TIME [OPTIONS]");
                 System.out.println("Options:");
@@ -170,6 +158,8 @@ public class Main {
                 System.out.println("  --forbidden-modes <modes>    Set forbidden transport modes (e.g., BUS, TRAIN)");
                 System.out.println("  --mode-weights <mode:weight> Set custom weights for transport modes");
                 System.out.println("  --mode-switch-penalty <penalty> Set penalty for mode switching (default: 5.0)");
+                System.out.println("  --max-transfers <number>     Set maximum number of transfers allowed (default: 5)");
+                System.out.println("  --visualize                  Enable visualization of the pathfinding algorithm");
                 System.exit(0);
             } else {
                 throw new IllegalArgumentException("Unknown argument: " + arg);

@@ -5,8 +5,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
 
-public record Connection(String fromStop, String toStop, String tripId, String routeId, String routeName,
-                         LocalTime departureTime, LocalTime arrivalTime, String mode) {
+public record Connection(
+        String fromStop,
+        String toStop,
+        String tripId,
+        String routeId,
+        String routeName,
+        LocalTime departureTime,
+        LocalTime arrivalTime,
+        String mode
+) {
 
     @Contract("_, _, _, _ -> new")
     public static @NotNull Connection createWalkingConnection(String fromStop, String toStop,

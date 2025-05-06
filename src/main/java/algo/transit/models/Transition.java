@@ -22,7 +22,7 @@ public record Transition(String fromStop, String toStop, String mode, String rou
     }
 
     @Override
-    public String toString() {
+    public @NotNull String toString() {
         return "Take " + mode + " " + (route.isEmpty() ? "" : route + " ") +
                 "from " + fromStop + " (" + departure + ") " +
                 "to " + toStop + " (" + arrival + ")";

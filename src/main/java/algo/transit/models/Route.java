@@ -13,7 +13,11 @@ public class Route {
     public final TransportType type;
     public final Set<Stop> possibleStops = new HashSet<>();
 
-    public Route(String routeID, String shortName, String longName, String typeStr) {
+    public Route(String routeID,
+                 String shortName,
+                 String longName,
+                 String typeStr
+    ) {
         this.routeId = routeID;
         this.shortName = shortName;
         this.longName = longName;

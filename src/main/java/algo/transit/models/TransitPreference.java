@@ -11,15 +11,21 @@ public class TransitPreference {
     public Map<TransportType, Double> modeWeights;
     public List<TransportType> forbiddenModes;
     public double modeSwitchPenalty;
+    public int maxTransfers;
 
-    public TransitPreference(double walkingSpeed, double maxWalkingTime,
-                             Map<TransportType, Double> modeWeights,
-                             List<TransportType> forbiddenModes,
-                             double modeSwitchPenalty) {
+    public TransitPreference(
+            double walkingSpeed,
+            double maxWalkingTime,
+            Map<TransportType, Double> modeWeights,
+            List<TransportType> forbiddenModes,
+            double modeSwitchPenalty,
+            int maxTransfers
+    ) {
         this.walkingSpeed = walkingSpeed;
         this.maxWalkingTime = maxWalkingTime;
         this.modeWeights = modeWeights;
         this.forbiddenModes = forbiddenModes;
         this.modeSwitchPenalty = modeSwitchPenalty;
+        this.maxTransfers = maxTransfers;
     }
 }
