@@ -100,15 +100,8 @@ public class Main {
                 System.err.println("Invalid transport type: " + entry.getKey() + ". Skipping.");
             }
         }
-
-        // Reduce max walk time for longer distances
-        double adjustedMaxWalkTime = args.maxWalkTime;
-        if (distance > 15000) {
-            adjustedMaxWalkTime = Math.min(adjustedMaxWalkTime, 5.0); // Cap walking time for longer trips
-            System.out.println("Adjusted max walk time to " + adjustedMaxWalkTime + " minutes for long trip");
-        }
-
-        return new TransitPreference(args.walkingSpeed, adjustedMaxWalkTime, modeWeights, args.forbiddenModes, args.modeSwitchPenalty);
+        
+        return new TransitPreference(args.walkingSpeed, args.maxWalkTime, modeWeights, args.forbiddenModes, args.modeSwitchPenalty);
     }
 
     public static class CommandLineArgs {
