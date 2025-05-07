@@ -12,6 +12,9 @@ public class TPreference {
     public List<TType> forbiddenModes;
     public double modeSwitchPenalty;
     public int maxTransfers;
+    public double maxWaitTime;
+    public double minTransferTime;
+    public String optimizationGoal;
 
     public TPreference(
             double walkingSpeed,
@@ -19,7 +22,10 @@ public class TPreference {
             Map<TType, Double> modeWeights,
             List<TType> forbiddenModes,
             double modeSwitchPenalty,
-            int maxTransfers
+            int maxTransfers,
+            double maxWaitTime,
+            double minTransferTime,
+            String optimizationGoal
     ) {
         this.walkingSpeed = walkingSpeed;
         this.maxWalkingTime = maxWalkingTime;
@@ -27,5 +33,8 @@ public class TPreference {
         this.forbiddenModes = forbiddenModes;
         this.modeSwitchPenalty = modeSwitchPenalty;
         this.maxTransfers = maxTransfers;
+        this.maxWaitTime = maxWaitTime;
+        this.minTransferTime = minTransferTime;
+        this.optimizationGoal = optimizationGoal;
     }
 }

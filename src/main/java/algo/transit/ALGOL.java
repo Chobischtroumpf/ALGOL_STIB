@@ -101,6 +101,10 @@ public class ALGOL {
         public double modeSwitchPenalty = 5.0;
         public int maxTransfers = 50;
         public boolean visualize = false;
+        public boolean arriveBy;
+        public String optimizationGoal;
+        public String outputFormat;
+        public boolean showStats;
     }
 
     public static @NotNull CommandLineArgs parseCommandLineArgs(String @NotNull [] args) {
@@ -153,12 +157,20 @@ public class ALGOL {
                 cmdArgs.modeSwitchPenalty = Double.parseDouble(args[++i]);
             } else if (arg.equals("--max-transfers") && i + 1 < args.length) {
                 cmdArgs.maxTransfers = Integer.parseInt(args[++i]);
+            } else if (arg.equals("--arrive-by")) {
+                cmdArgs.arriveBy = true;
+            } else if (arg.equals("--optimization-goal") && i + 1 < args.length) {
+                cmdArgs.optimizationGoal = args[++i];
+            } else if (arg.equals("--output-format") && i + 1 < args.length) {
+                cmdArgs.outputFormat = args[++i];
+            } else if (arg.equals("--show-stats")) {
+                cmdArgs.showStats = true;
             } else if (arg.equals("--visualize")) {
                 cmdArgs.visualize = true;
             } else if (arg.equals("--help")) {
                 System.out.println("Usage: java -jar transit.jar START_STOP END_STOP START_TIME [OPTIONS]");
                 System.out.println("Options:");
-                System.out.println("  --walking-speed <speed>       Set walking speed in meters per minute (default: 80.0)");
+                System.out.println("  --walking-speed <speed>      Set walking speed in meters per minute (default: 80.0)");
                 System.out.println("  --max-walk-time <time>       Set maximum walking time in minutes (default: 10.0)");
                 System.out.println("  --forbidden-modes <modes>    Set forbidden transport modes (e.g., BUS, TRAIN)");
                 System.out.println("  --mode-weights <mode:weight> Set custom weights for transport modes");
