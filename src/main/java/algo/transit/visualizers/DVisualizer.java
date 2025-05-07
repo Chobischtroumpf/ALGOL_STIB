@@ -1,9 +1,8 @@
 package algo.transit.visualizers;
 
-import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.models.common.Stop;
 import algo.transit.models.pathfinder.Transition;
-
+import algo.transit.models.visualizer.StateRecorder;
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
@@ -28,29 +27,29 @@ public class DVisualizer extends JFrame implements GLEventListener {
     // OpenGL components
     private final GLCanvas canvas;
     private final FPSAnimator animator;
-    private TextRenderer textRenderer;
-    private GLUT glut;
 
     // Data
     private final Map<String, Stop> stops;
+    private final Set<String> pathIntermediateStops = new HashSet<>();
+    private final Set<String> currentExploredStops = new HashSet<>();
+
+    // Control
+    private final java.util.concurrent.CountDownLatch completionLatch = new java.util.concurrent.CountDownLatch(1);
+    private TextRenderer textRenderer;
+    private GLUT glut;
     private Stop startStop;
     private Stop endStop;
     private StateRecorder recorder;
     private List<Transition> finalPath = new ArrayList<>();
-    private final Set<String> pathIntermediateStops = new HashSet<>();
 
     // Animation state
     private int currentFrame = 0;
     private int[] framesToStateIndex;
-    private final Set<String> currentExploredStops = new HashSet<>();
     private boolean showPath = false;
     private int pathFoundFrame = -1;
 
     // Spatial data
     private double minLat, maxLat, minLon, maxLon;
-
-    // Control
-    private final java.util.concurrent.CountDownLatch completionLatch = new java.util.concurrent.CountDownLatch(1);
 
     public DVisualizer(Map<String, Stop> stops) {
         super("ALGOL Pathfinder Visualizer");

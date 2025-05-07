@@ -16,36 +16,40 @@ public record Connection(
         String mode
 ) {
 
-    @Contract("_, _, _, _ -> new")
+    @Contract("_, _, _, _, _ -> new")
     public static @NotNull Connection createWalkingConnection(
             String fromStop,
             String toStop,
             LocalTime currentTime,
-            int walkTimeMinutes
+            int walkTimeMinutes,
+            int dayOffset
     ) {
         // Very short walks are treated as transfers with no time cost
         if (walkTimeMinutes <= 1) {
             return new Connection(
                     fromStop,
                     toStop,
-                    "",  // No trip ID
-                    "",  // No route ID
-                    "transfer",  // Indicate this is a transfer
+                    "",
+                    "",
+                    "transfer",
                     currentTime,
-                    currentTime,  // Same arrival time = zero time cost
+                    currentTime,
                     "FOOT"
             );
         }
+
+        // Calculate walking end time
+        LocalTime arrivalTime = currentTime.plusMinutes(walkTimeMinutes);
 
         // Normal walking connections use actual calculated time
         return new Connection(
                 fromStop,
                 toStop,
-                "",  // No trip ID
-                "",  // No route ID
-                "",  // No route name
+                "",
+                "",
+                "",
                 currentTime,
-                currentTime.plusMinutes(walkTimeMinutes),
+                arrivalTime,
                 "FOOT"
         );
     }

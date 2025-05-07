@@ -3,7 +3,8 @@ package algo.transit.models.common;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Trip {
     public final String tripId;
@@ -62,7 +63,6 @@ public class Trip {
     }
 
     public List<Stop> getOrderedStops() {
-        // Create a list with only non-null stops
         List<Stop> result = new ArrayList<>(stops.size());
         for (Stop stop : stops) if (stop != null) result.add(stop);
         return result;

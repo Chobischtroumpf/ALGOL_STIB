@@ -1,6 +1,8 @@
 package algo.transit.models.common;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 public class Stop {
     public final String stopId;

@@ -14,21 +14,6 @@ import java.util.Map;
 public class CLParser {
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    public static class CLArgs {
-        public String startStop;
-        public String endStop;
-        public LocalTime startTime;
-        public double walkingSpeed = 80.0;
-        public double maxWalkTime = 10.0;
-        public List<TType> forbiddenModes = new ArrayList<>();
-        public Map<TType, Double> modeWeights = new HashMap<>();
-        public boolean visualize = false;
-        public boolean arriveBy = false;
-        public String optimizationGoal = "time";
-        public String outputFormat = "detailed";
-        public boolean showStats = false;
-    }
-
     public static void printUsage() {
         System.out.println("Usage: java -jar transit.jar START_STOP END_STOP START_TIME [OPTIONS]");
         System.out.println("Options:");
@@ -44,7 +29,7 @@ public class CLParser {
         System.out.println("  --help                       Display this help message");
     }
 
-    public static @NotNull CLParser.CLArgs parseCommandLineArgs(String @NotNull [] args) {
+    public static @NotNull CLArgs parseCommandLineArgs(String @NotNull [] args) {
         CLArgs cmdArgs = new CLArgs();
 
         if (args.length < 3) {
@@ -160,5 +145,20 @@ public class CLParser {
         }
 
         return cmdArgs;
+    }
+
+    public static class CLArgs {
+        public String startStop;
+        public String endStop;
+        public LocalTime startTime;
+        public double walkingSpeed = 80.0;
+        public double maxWalkTime = 10.0;
+        public List<TType> forbiddenModes = new ArrayList<>();
+        public Map<TType, Double> modeWeights = new HashMap<>();
+        public boolean visualize = false;
+        public boolean arriveBy = false;
+        public String optimizationGoal = "time";
+        public String outputFormat = "detailed";
+        public boolean showStats = false;
     }
 }

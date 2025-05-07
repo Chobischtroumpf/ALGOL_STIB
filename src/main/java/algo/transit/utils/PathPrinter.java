@@ -1,7 +1,8 @@
 package algo.transit.utils;
 
-import algo.transit.models.pathfinder.Transition;
 import algo.transit.models.common.Stop;
+import algo.transit.models.pathfinder.Transition;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
@@ -34,13 +35,15 @@ public class PathPrinter {
         LocalTime startTime = firstTransition.departure();
         LocalTime endTime = lastTransition.arrival();
 
-        long totalMinutes = calculateMinutesBetween(startTime, endTime);
-        int totalTransfers = countTransfers(path, stops);
+        int dayDifference = lastTransition.dayOffset() - firstTransition.dayOffset();
+        long totalMinutes = calculateMinutesBetween(startTime, endTime, dayDifference);
+
+        int totalTransfers = countTransfers(path);
 
         if (outputFormat.equalsIgnoreCase("summary")) {
-            printSummaryPath(path, totalMinutes, totalTransfers, stops);
+            printSummaryPath(path, totalMinutes, totalTransfers, stops, dayDifference);
         } else {
-            printDetailedPath(path, totalMinutes, stops);
+            printDetailedPath(path, totalMinutes, stops, dayDifference);
         }
 
         if (showStats) printPathStatistics(path, stops);
@@ -49,7 +52,8 @@ public class PathPrinter {
     private static void printDetailedPath(
             @NotNull List<Transition> path,
             long totalMinutes,
-            @NotNull Map<String, Stop> stops
+            @NotNull Map<String, Stop> stops,
+            int dayDifference
     ) {
         System.out.println("\nOptimal route:");
         System.out.println("======================");
@@ -60,8 +64,8 @@ public class PathPrinter {
         System.out.println("From: " + stops.get(firstTransition.fromStop()).name);
         System.out.println("To: " + stops.get(lastTransition.toStop()).name);
         System.out.println("Departure: " + firstTransition.departure());
-        System.out.println("Arrival: " + lastTransition.arrival());
-        System.out.println("Total travel time: " + totalMinutes + " minutes");
+        System.out.println("Arrival: " + lastTransition.arrival() + (dayDifference > 0 ? " (+1 day)" : ""));
+        System.out.println("Total travel time: " + formatDuration(totalMinutes) + (dayDifference > 0 ? " (+1 day)" : ""));
         System.out.println("======================");
 
         // Print detailed path
@@ -101,15 +105,16 @@ public class PathPrinter {
             @NotNull List<Transition> path,
             long totalMinutes,
             int totalTransfers,
-            @NotNull Map<String, Stop> stops
+            @NotNull Map<String, Stop> stops,
+            int dayDifference
     ) {
         System.out.println("Route Summary:");
         System.out.println("--------------");
         System.out.println("From: " + stops.get(path.getFirst().fromStop()).name);
         System.out.println("To: " + stops.get(path.getLast().toStop()).name);
         System.out.println("Departure: " + path.getFirst().departure());
-        System.out.println("Arrival: " + path.getLast().arrival());
-        System.out.println("Travel time: " + totalMinutes + " minutes");
+        System.out.println("Arrival: " + path.getLast().arrival() + (dayDifference > 0 ? " (+1 day)" : ""));
+        System.out.println("Travel time: " + formatDuration(totalMinutes) + (dayDifference > 0 ? " (+1 day)" : ""));
         System.out.println("Transfers: " + totalTransfers);
         System.out.println("Segments: " + path.size());
     }
@@ -175,10 +180,10 @@ public class PathPrinter {
 
         // Print time breakdown
         System.out.println("Time breakdown:");
-        System.out.println("  Total travel time: " + totalMinutes + " minutes");
-        System.out.println("  In-vehicle time: " + totalInVehicleTime + " minutes (" +
+        System.out.println("  Total travel time: " + formatDuration(totalMinutes));
+        System.out.println("  In-vehicle time: " + formatDuration(totalInVehicleTime) + " (" +
                 Math.round(totalInVehicleTime * 100.0 / totalMinutes) + "%)");
-        System.out.println("  Waiting time: " + totalWaitTime + " minutes (" +
+        System.out.println("  Waiting time: " + formatDuration(totalWaitTime) + " (" +
                 Math.round(totalWaitTime * 100.0 / totalMinutes) + "%)");
 
         // Print mode statistics
@@ -190,20 +195,28 @@ public class PathPrinter {
             long distance = modeDistance.getOrDefault(mode, 0L);
 
             System.out.println("  " + mode + ": " + count + " segments, " +
-                    duration + " minutes, ~" + (distance / 1000) + " km");
+                    formatDuration(duration) + ", ~" + (distance / 1000) + " km");
         }
 
         // Print transfer information
-        int transfers = countTransfers(path, stops);
+        int transfers = countTransfers(path);
         System.out.println("\nTransfers: " + transfers);
 
         System.out.println("=======================");
     }
 
-    private static int countTransfers(
-            @NotNull List<Transition> path,
-            @NotNull Map<String, Stop> stops
-    ) {
+    @Contract(pure = true)
+    private static @NotNull String formatDuration(long minutes) {
+        if (minutes < 60) {
+            return minutes + " min";
+        } else {
+            long hours = minutes / 60;
+            long mins = minutes % 60;
+            return hours + "h " + (mins > 0 ? mins + "m" : "");
+        }
+    }
+
+    private static int countTransfers(@NotNull List<Transition> path) {
         if (path.isEmpty()) return 0;
 
         int transfers = 0;
@@ -214,9 +227,12 @@ public class PathPrinter {
             String currentMode = transition.mode();
             String currentRoute = transition.route();
 
-            if (!lastMode.equals("NONE") &&
-                    (!lastMode.equals(currentMode) ||
-                            !lastRoute.equals(currentRoute) && !currentMode.equals("FOOT"))) {
+            // Only count as a transfer if:
+            // 1. Not the first segment
+            // 2. Different route (unless it's FOOT)
+            // 3. Not switching from FOOT to any mode (this isn't a transfer)
+            if (!lastMode.equals("NONE") && !lastMode.equals("FOOT") &&
+                    (!currentRoute.equals(lastRoute) || !currentMode.equals(lastMode))) {
                 transfers++;
             }
 

@@ -15,9 +15,36 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class CSVService {
+    public static final Path[] DefaultRoutesPaths = new Path[]{
+            Path.of("src", "main", "resources", "GTFS", "DELIJN", "routes.csv"),
+            Path.of("src", "main", "resources", "GTFS", "SNCB", "routes.csv"),
+            Path.of("src", "main", "resources", "GTFS", "TEC", "routes.csv"),
+            Path.of("src", "main", "resources", "GTFS", "STIB", "routes.csv")
+    };
+    public static final Path[] DefaultStopTimesPaths = new Path[]{
+            Path.of("src", "main", "resources", "GTFS", "DELIJN", "stop_times.csv"),
+            Path.of("src", "main", "resources", "GTFS", "SNCB", "stop_times.csv"),
+            Path.of("src", "main", "resources", "GTFS", "TEC", "stop_times.csv"),
+            Path.of("src", "main", "resources", "GTFS", "STIB", "stop_times.csv")
+    };
+    public static final Path[] DefaultStopsPaths = new Path[]{
+            Path.of("src", "main", "resources", "GTFS", "DELIJN", "stops.csv"),
+            Path.of("src", "main", "resources", "GTFS", "SNCB", "stops.csv"),
+            Path.of("src", "main", "resources", "GTFS", "TEC", "stops.csv"),
+            Path.of("src", "main", "resources", "GTFS", "STIB", "stops.csv")
+    };
+    public static final Path[] DefaultTripsPaths = new Path[]{
+            Path.of("src", "main", "resources", "GTFS", "DELIJN", "trips.csv"),
+            Path.of("src", "main", "resources", "GTFS", "SNCB", "trips.csv"),
+            Path.of("src", "main", "resources", "GTFS", "TEC", "trips.csv"),
+            Path.of("src", "main", "resources", "GTFS", "STIB", "trips.csv")
+    };
     public final Path[] routesPaths, stopTimesPaths, stopsPaths, tripsPaths;
 
     public CSVService() {
@@ -36,81 +63,6 @@ public class CSVService {
         this.tripsPaths = tripsPaths;
     }
 
-    public static final Path[] DefaultRoutesPaths = new Path[]{
-            Path.of("src", "main", "resources", "GTFS", "DELIJN", "routes.csv"),
-            Path.of("src", "main", "resources", "GTFS", "SNCB", "routes.csv"),
-            Path.of("src", "main", "resources", "GTFS", "TEC", "routes.csv"),
-            Path.of("src", "main", "resources", "GTFS", "STIB", "routes.csv")
-    };
-
-    public static final Path[] DefaultStopTimesPaths = new Path[]{
-            Path.of("src", "main", "resources", "GTFS", "DELIJN", "stop_times.csv"),
-            Path.of("src", "main", "resources", "GTFS", "SNCB", "stop_times.csv"),
-            Path.of("src", "main", "resources", "GTFS", "TEC", "stop_times.csv"),
-            Path.of("src", "main", "resources", "GTFS", "STIB", "stop_times.csv")
-    };
-
-    public static final Path[] DefaultStopsPaths = new Path[]{
-            Path.of("src", "main", "resources", "GTFS", "DELIJN", "stops.csv"),
-            Path.of("src", "main", "resources", "GTFS", "SNCB", "stops.csv"),
-            Path.of("src", "main", "resources", "GTFS", "TEC", "stops.csv"),
-            Path.of("src", "main", "resources", "GTFS", "STIB", "stops.csv")
-    };
-
-    public static final Path[] DefaultTripsPaths = new Path[]{
-            Path.of("src", "main", "resources", "GTFS", "DELIJN", "trips.csv"),
-            Path.of("src", "main", "resources", "GTFS", "SNCB", "trips.csv"),
-            Path.of("src", "main", "resources", "GTFS", "TEC", "trips.csv"),
-            Path.of("src", "main", "resources", "GTFS", "STIB", "trips.csv")
-    };
-
-    public interface FromCSV<T> {
-        T fromCSV(String[] row);
-    }
-
-    public static class CSVIterator<T> implements Iterator<T>, Iterable<T>, AutoCloseable {
-        public final FromCSV<T> converter;
-        public final CSVReader reader;
-        public String[] next = null;
-
-        public CSVIterator(
-                @NotNull Path filePath,
-                FromCSV<T> converter
-        ) throws IOException, CsvException {
-            this.converter = converter;
-            this.reader = new CSVReader(new BufferedReader(new FileReader(filePath.toString()), 8192 * 16));
-            reader.readNextSilently(); // discard header
-        }
-
-        @Override
-        public void close() throws Exception {
-            reader.close();
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (next != null) return true;
-            try {
-                return (next = reader.readNext()) != null;
-            } catch (IOException | CsvValidationException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public @Nullable T next() {
-            if (next == null && !hasNext()) return null;
-            String[] current = next;
-            next = null;
-            return converter.fromCSV(current);
-        }
-
-        @Override
-        public @NotNull Iterator<T> iterator() {
-            return this;
-        }
-    }
-
     @Contract("_, _ -> new")
     public static <T> @NotNull Iterable<T> readCSV(
             Path filePath,
@@ -121,6 +73,28 @@ public class CSVService {
         } catch (IOException | CsvException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static LocalTime checkTime(@NotNull String time) {
+        String[] timeArr = time.split(":");
+
+        if (timeArr.length != 3) throw new IllegalArgumentException("Invalid time format: " + time);
+
+        int hour = Integer.parseInt(timeArr[0]);
+        int minute = Integer.parseInt(timeArr[1]);
+        int second = Integer.parseInt(timeArr[2]);
+
+        // Handle hour values > 23 properly
+        if (hour > 23) {
+            // For GTFS, hours can be >24 to represent service past midnight
+            // We'll standardize to 0-23 for simplicity
+            hour %= 24;
+        }
+
+        if (minute > 59) minute %= 60;
+        if (second > 59) second %= 60;
+
+        return LocalTime.of(hour, minute, second);
     }
 
     public Map<String, Route> getRoutes() {
@@ -246,27 +220,50 @@ public class CSVService {
         return trips;
     }
 
-    public static LocalTime checkTime(@NotNull String time) {
-        String[] timeArr = time.split(":");
+    public interface FromCSV<T> {
+        T fromCSV(String[] row);
+    }
 
-        if (timeArr.length != 3) {
-            throw new IllegalArgumentException("Invalid time format: " + time);
+    public static class CSVIterator<T> implements Iterator<T>, Iterable<T>, AutoCloseable {
+        public final FromCSV<T> converter;
+        public final CSVReader reader;
+        public String[] next = null;
+
+        public CSVIterator(
+                @NotNull Path filePath,
+                FromCSV<T> converter
+        ) throws IOException, CsvException {
+            this.converter = converter;
+            this.reader = new CSVReader(new BufferedReader(new FileReader(filePath.toString()), 8192 * 64));
+            reader.readNextSilently(); // Discard header
         }
 
-        int hour = Integer.parseInt(timeArr[0]);
-        int minute = Integer.parseInt(timeArr[1]);
-        int second = Integer.parseInt(timeArr[2]);
-
-        // Handle hour values > 23 properly
-        if (hour > 23) {
-            // For GTFS, hours can be >24 to represent service past midnight
-            // We'll standardize to 0-23 for simplicity
-            hour %= 24;
+        @Override
+        public void close() throws Exception {
+            reader.close();
         }
 
-        if (minute > 59) minute %= 60;
-        if (second > 59) second %= 60;
+        @Override
+        public boolean hasNext() {
+            if (next != null) return true;
+            try {
+                return (next = reader.readNext()) != null;
+            } catch (IOException | CsvValidationException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
-        return LocalTime.of(hour, minute, second);
+        @Override
+        public @Nullable T next() {
+            if (next == null && !hasNext()) return null;
+            String[] current = next;
+            next = null;
+            return converter.fromCSV(current);
+        }
+
+        @Override
+        public @NotNull Iterator<T> iterator() {
+            return this;
+        }
     }
 }

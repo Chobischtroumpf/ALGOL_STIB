@@ -2,7 +2,6 @@ package algo.transit.utils;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Duration;
 import java.time.LocalTime;
 
 public class TimeUtils {
@@ -11,24 +10,21 @@ public class TimeUtils {
      */
     public static long calculateMinutesBetween(
             @NotNull LocalTime start,
-            @NotNull LocalTime end
+            @NotNull LocalTime end,
+            int dayDifference
     ) {
-        int startHour = start.getHour();
-        int endHour = end.getHour();
+        // Calculate base duration within a day
+        long startMinutes = start.getHour() * 60 + start.getMinute();
+        long endMinutes = end.getHour() * 60 + end.getMinute();
 
-        // Adjust for GTFS times > 24 hours
-        if (startHour >= 24) startHour %= 24;
-        if (endHour >= 24) endHour %= 24;
+        // Add day differences
+        return endMinutes - startMinutes + (dayDifference * 1440L);
+    }
 
-        LocalTime adjustedStart = LocalTime.of(startHour, start.getMinute(), start.getSecond());
-        LocalTime adjustedEnd = LocalTime.of(endHour, end.getMinute(), end.getSecond());
-
-        // If end appears before start, assume it's the next day
-        if (adjustedEnd.isBefore(adjustedStart)) adjustedEnd = adjustedEnd.plusHours(24);
-
-        // Calculate duration
-        Duration duration = Duration.between(adjustedStart, adjustedEnd);
-        return duration.toMinutes();
+    public static long calculateMinutesBetween(
+            @NotNull LocalTime start,
+            @NotNull LocalTime end) {
+        return calculateMinutesBetween(start, end, end.isBefore(start) ? 1 : 0);
     }
 
     /**

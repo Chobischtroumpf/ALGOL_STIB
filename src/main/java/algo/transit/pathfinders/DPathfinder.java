@@ -24,6 +24,41 @@ public class DPathfinder extends AbstractPathfinder {
         super(stops);
     }
 
+    @Contract("_, _, _ -> new")
+    private static @NotNull DijkstraState getDijkstraState(
+            Connection connection,
+            double transitionCost,
+            @NotNull DijkstraState current
+    ) {
+        int newDayOffset = current.dayOffset;
+        if (connection.arrivalTime().isBefore(connection.departureTime())) newDayOffset++;
+
+        Transition transition = Transition.fromConnection(
+                connection,
+                transitionCost,
+                current.dayOffset
+        );
+
+        List<Transition> newPath = new ArrayList<>(current.path);
+        newPath.add(transition);
+
+        // Count transfers - different mode = transfer
+        int transfers = current.transfers;
+        if (!current.lastMode.equals("NONE") && !current.lastMode.equals(connection.mode())) {
+            transfers++;
+        }
+
+        return new DijkstraState(
+                connection.toStop(),
+                connection.arrivalTime(),
+                newDayOffset,
+                current.cost + transitionCost,
+                newPath,
+                connection.mode(),
+                transfers
+        );
+    }
+
     /**
      * Finds the shortest path using Dijkstra's algorithm
      */
@@ -45,15 +80,12 @@ public class DPathfinder extends AbstractPathfinder {
             return Collections.emptyList();
         }
 
-        // Calculate max transfers based on journey distance
-        int maxTransfers = calculateMaxTransfers(startStop, endStop, preferences.optimizationGoal);
-
         // Initialize Dijkstra algorithm
         PriorityQueue<DijkstraState> priorityQueue = new PriorityQueue<>();
         Map<String, Double> bestCosts = new HashMap<>();
 
         DijkstraState initialState = new DijkstraState(
-                startStopId, startTime, 0, new ArrayList<>(), "NONE", 0
+                startStopId, startTime, 0, 0.0, new ArrayList<>(), "NONE", 0
         );
         priorityQueue.add(initialState);
         bestCosts.put(startStopId, 0.0);
@@ -80,16 +112,18 @@ public class DPathfinder extends AbstractPathfinder {
             Double bestCost = bestCosts.get(current.stopId);
             if (bestCost != null && bestCost < current.cost) continue;
 
-            // Skip if we've reached the maximum number of transfers
-            if (current.transfers > maxTransfers) continue;
-
             // Get max wait time based on time of day
             double maxWaitTime = calculateMaxWaitTime(current.time);
 
             // Generate and process all possible transitions from current state
             List<Connection> connections = findPossibleConnections(current, preferences, endStop, maxWaitTime);
             for (Connection connection : connections) {
-                double transitionCost = calculateTransitionCost(current.time, connection, current.lastMode, preferences);
+                double transitionCost = calculateTransitionCost(
+                        current.time,
+                        connection,
+                        current.lastMode,
+                        current.dayOffset,
+                        preferences);
 
                 if (transitionCost < 0) continue;
 
@@ -105,58 +139,6 @@ public class DPathfinder extends AbstractPathfinder {
         }
 
         return Collections.emptyList();
-    }
-
-    @Contract("_, _, _ -> new")
-    private static @NotNull DijkstraState getDijkstraState(
-            Connection connection,
-            double transitionCost,
-            @NotNull DijkstraState current
-    ) {
-        Transition transition = Transition.fromConnection(connection, transitionCost);
-
-        List<Transition> newPath = new ArrayList<>(current.path);
-        newPath.add(transition);
-
-        // Count transfers - different mode = transfer
-        int transfers = current.transfers;
-        if (!current.lastMode.equals("NONE") && !current.lastMode.equals(connection.mode())) transfers++;
-
-        return new DijkstraState(
-                connection.toStop(),
-                connection.arrivalTime(),
-                current.cost + transitionCost,
-                newPath,
-                connection.mode(),
-                transfers
-        );
-    }
-
-    /**
-     * Class to represent a state in the Dijkstra algorithm
-     */
-    private record DijkstraState(
-            String stopId,
-            LocalTime time,
-            double cost,
-            List<Transition> path,
-            String lastMode,
-            int transfers
-    ) implements Comparable<DijkstraState> {
-
-        @Contract(pure = true)
-        @Override
-        public int compareTo(@NotNull DijkstraState other) {
-            // Pure Dijkstra: compare only on cost
-            return Double.compare(this.cost, other.cost);
-        }
-
-        @Override
-        public @NotNull String toString() {
-            return "State{stopId='" + stopId + "', time=" + time +
-                    ", cost=" + cost + ", transfers=" + transfers +
-                    ", pathLen=" + path.size() + '}';
-        }
     }
 
     private @NotNull List<Connection> findPossibleConnections(
@@ -258,7 +240,8 @@ public class DPathfinder extends AbstractPathfinder {
         );
 
         for (Stop nearbyStop : nearbyStops) {
-            if (nearbyStop.stopId.equals(currentStop.stopId)) continue;
+            // Skip if from and to are the same stop or refer to same physical location
+            if (nearbyStop.stopId.equals(currentStop.stopId) || nearbyStop.name.equals(currentStop.name)) continue;
 
             // Calculate walking time
             double distance = QuadTree.calculateDistance(
@@ -275,8 +258,37 @@ public class DPathfinder extends AbstractPathfinder {
                     currentStop.stopId,
                     nearbyStop.stopId,
                     current.time,
-                    walkingTimeMinutes
+                    walkingTimeMinutes,
+                    current.dayOffset
             ));
+        }
+    }
+
+    /**
+     * Class to represent a state in the Dijkstra algorithm
+     */
+    private record DijkstraState(
+            String stopId,
+            LocalTime time,
+            int dayOffset,
+            double cost,
+            List<Transition> path,
+            String lastMode,
+            int transfers
+    ) implements Comparable<DijkstraState> {
+
+        @Contract(pure = true)
+        @Override
+        public int compareTo(@NotNull DijkstraState other) {
+            // Pure Dijkstra: compare only on cost
+            return Double.compare(this.cost, other.cost);
+        }
+
+        @Override
+        public @NotNull String toString() {
+            return "State{stopId='" + stopId + "', time=" + time +
+                    ", cost=" + cost + ", transfers=" + transfers +
+                    ", pathLen=" + path.size() + '}';
         }
     }
 }

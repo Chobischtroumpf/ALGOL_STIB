@@ -12,11 +12,19 @@ public record Transition(
         String route,
         LocalTime departure,
         LocalTime arrival,
+        int dayOffset,
         double cost
 ) {
+    @Contract(value = "_, _, _ -> new", pure = true)
+    public static @NotNull Transition fromConnection(
+            @NotNull Connection connection,
+            double cost,
+            int currentDayOffset
+    ) {
+        // Calculate if the arrival crosses to next day
+        int newDayOffset = currentDayOffset;
+        if (connection.arrivalTime().isBefore(connection.departureTime())) newDayOffset++;
 
-    @Contract(value = "_, _ -> new", pure = true)
-    public static @NotNull Transition fromConnection(@NotNull Connection connection, double cost) {
         return new Transition(
                 connection.fromStop(),
                 connection.toStop(),
@@ -24,6 +32,7 @@ public record Transition(
                 connection.routeName(),
                 connection.departureTime(),
                 connection.arrivalTime(),
+                newDayOffset,
                 cost
         );
     }

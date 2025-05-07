@@ -16,14 +16,14 @@ import java.util.Map;
 import static algo.transit.utils.TimeUtils.calculateMinutesBetween;
 
 public abstract class AbstractPathfinder {
-    protected final Map<String, Stop> stops;
-    protected final QuadTree stopQuadTree;
-
     // Constants for spatial indexing
     protected static final double MAX_LATITUDE = 52.0;
     protected static final double MIN_LATITUDE = 49.0;
     protected static final double MAX_LONGITUDE = 7.0;
     protected static final double MIN_LONGITUDE = 2.0;
+
+    protected final Map<String, Stop> stops;
+    protected final QuadTree stopQuadTree;
 
     // Recorder for visualizing the pathfinding process
     public StateRecorder recorder;
@@ -58,30 +58,36 @@ public abstract class AbstractPathfinder {
             LocalTime currentTime,
             @NotNull Connection connection,
             String lastMode,
+            int currentDayOffset,
             @NotNull TPreference preferences
     ) {
-        long waitingMinutes = calculateMinutesBetween(currentTime, connection.departureTime());
-        long transitMinutes = calculateMinutesBetween(connection.departureTime(), connection.arrivalTime());
+        long waitingMinutes = calculateMinutesBetween(
+                currentTime,
+                connection.departureTime(),
+                0);
+        long transitMinutes = calculateMinutesBetween(
+                connection.departureTime(),
+                connection.arrivalTime(),
+                connection.arrivalTime().isBefore(connection.departureTime()) ? 1 : 0);
 
         double cost;
         String goal = preferences.optimizationGoal;
 
         if (goal == null || goal.isEmpty() || goal.equalsIgnoreCase("time")) {
-            // Default: optimize for time
-            cost = transitMinutes + (waitingMinutes * 0.5); // Half penalty for waiting
+            // Half penalty for waiting
+            cost = transitMinutes + (waitingMinutes * 0.5);
         } else if (goal.equalsIgnoreCase("transfers")) {
             // Heavily penalize mode changes to minimize transfers
-            cost = transitMinutes + (waitingMinutes * 0.1);
-            // Mode switch penalty will be added below and should be high
+            cost = (transitMinutes * 0.1) + (waitingMinutes * 0.01);
         } else if (goal.equalsIgnoreCase("walking")) {
             // Heavily penalize walking
             if (connection.mode().equals("FOOT")) {
-                cost = transitMinutes * 5.0; // 5x penalty for walking time
+                // Heavy penalty for walking
+                cost = transitMinutes * 5.0;
             } else {
                 cost = transitMinutes + (waitingMinutes * 0.5);
             }
         } else {
-            // Default if optimization goal is unrecognized
             cost = transitMinutes + (waitingMinutes * 0.5);
         }
 
@@ -208,8 +214,11 @@ public abstract class AbstractPathfinder {
         int fromRoutes = fromStop.routes.size();
         int toRoutes = toStop.routes.size();
 
-        if (fromRoutes > 5 || toRoutes > 5) { transferTime += 2.0;
-        } else if (fromRoutes > 2 || toRoutes > 2) { transferTime += 1.0; }
+        if (fromRoutes > 5 || toRoutes > 5) {
+            transferTime += 2.0;
+        } else if (fromRoutes > 2 || toRoutes > 2) {
+            transferTime += 1.0;
+        }
 
         return Math.min(Math.max(transferTime, 1.0), 5.0);
     }
@@ -223,43 +232,22 @@ public abstract class AbstractPathfinder {
 
         // Higher penalty for transfers optimization
         if ("transfers".equalsIgnoreCase(optimizationGoal)) {
-            penalty = 50.0;
+            penalty = 500.0;
             return penalty;
         }
 
         // Mode-specific adjustments
-        if (fromMode.equals("TRAIN") && toMode.equals("BUS")) { penalty = 8.0;
-        } else if (fromMode.equals("BUS") && toMode.equals("BUS")) { penalty = 4.0;
-        } else if (fromMode.equals("TRAM") && toMode.equals("TRAM")) { penalty = 3.0;
-        } else if (fromMode.equals("FOOT") || toMode.equals("FOOT")) { penalty = 2.0; }
+        if (fromMode.equals("TRAIN") && toMode.equals("BUS")) {
+            penalty = 8.0;
+        } else if (fromMode.equals("BUS") && toMode.equals("BUS")) {
+            penalty = 4.0;
+        } else if (fromMode.equals("TRAM") && toMode.equals("TRAM")) {
+            penalty = 3.0;
+        } else if (fromMode.equals("FOOT") || toMode.equals("FOOT")) {
+            penalty = 2.0;
+        }
 
         return penalty;
-    }
-
-    protected int calculateMaxTransfers(
-            Stop startStop,
-            Stop endStop,
-            String optimizationGoal
-    ) {
-        if (startStop == null || endStop == null) return 5;
-
-        double distance = QuadTree.calculateDistance(
-                startStop.latitude, startStop.longitude,
-                endStop.latitude, endStop.longitude
-        );
-
-        // Scale based on distance
-        int maxTransfers;
-
-        if (distance < 1000) { maxTransfers = 4;
-        } else if (distance < 5000) { maxTransfers = 6;
-        } else if (distance < 20000) { maxTransfers = 8;
-        } else if (distance < 50000) { maxTransfers = 10;
-        } else if (distance < 100000) { maxTransfers = 12;
-        } else { maxTransfers = 15; }
-
-        if ("walking".equalsIgnoreCase(optimizationGoal)) maxTransfers += 2;
-        return maxTransfers;
     }
 
     protected double calculateMaxWaitTime(@NotNull LocalTime currentTime) {
