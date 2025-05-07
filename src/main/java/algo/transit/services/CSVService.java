@@ -24,7 +24,12 @@ public class CSVService {
         this(DefaultRoutesPaths, DefaultStopTimesPaths, DefaultStopsPaths, DefaultTripsPaths);
     }
 
-    public CSVService(Path[] routesPaths, Path[] stopTimesPaths, Path[] stopsPaths, Path[] tripsPaths) {
+    public CSVService(
+            Path[] routesPaths,
+            Path[] stopTimesPaths,
+            Path[] stopsPaths,
+            Path[] tripsPaths
+    ) {
         this.routesPaths = routesPaths;
         this.stopTimesPaths = stopTimesPaths;
         this.stopsPaths = stopsPaths;
@@ -68,7 +73,10 @@ public class CSVService {
         public final CSVReader reader;
         public String[] next = null;
 
-        public CSVIterator(@NotNull Path filePath, FromCSV<T> converter) throws IOException, CsvException {
+        public CSVIterator(
+                @NotNull Path filePath,
+                FromCSV<T> converter
+        ) throws IOException, CsvException {
             this.converter = converter;
             this.reader = new CSVReader(new BufferedReader(new FileReader(filePath.toString()), 8192 * 16));
             reader.readNextSilently(); // discard header
@@ -104,7 +112,10 @@ public class CSVService {
     }
 
     @Contract("_, _ -> new")
-    public static <T> @NotNull Iterable<T> readCSV(Path filePath, FromCSV<T> converter) {
+    public static <T> @NotNull Iterable<T> readCSV(
+            Path filePath,
+            FromCSV<T> converter
+    ) {
         try {
             return new CSVIterator<>(filePath, converter);
         } catch (IOException | CsvException e) {
@@ -152,7 +163,10 @@ public class CSVService {
         return stops;
     }
 
-    public void linkData(Map<String, Stop> stops, Map<String, Trip> trips) {
+    public void linkData(
+            Map<String, Stop> stops,
+            Map<String, Trip> trips
+    ) {
         int stopTimeCount = 0;
 
         for (Path path : stopTimesPaths) {

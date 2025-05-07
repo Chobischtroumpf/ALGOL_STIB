@@ -6,8 +6,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class QuadTree {
     public static final int MAX_POINTS = 4;
@@ -17,7 +15,6 @@ public class QuadTree {
     public final int depth;
     public final List<Stop> points;
     public QuadTree[] children;
-    private static final Map<String, Double> distanceCache = new ConcurrentHashMap<>(10000);
 
     public QuadTree(
             double minX,
@@ -52,12 +49,16 @@ public class QuadTree {
         return insertIntoChildren(stop);
     }
 
-    public List<Stop> findNearby(double lat, double lon, double radius) {
+    public List<Stop> findNearby(
+            double lat,
+            double lon,
+            double radius
+    ) {
         List<Stop> result = new ArrayList<>();
         if (!intersectsRadius(lat, lon, radius)) return result;
 
         for (Stop stop : points) {
-            if (distance(lat, lon, stop.latitude, stop.longitude) <= radius) result.add(stop);
+            if (calculateDistance(lat, lon, stop.latitude, stop.longitude) <= radius) result.add(stop);
         }
 
         if (children != null) {
@@ -89,25 +90,22 @@ public class QuadTree {
         return false;
     }
 
-    private boolean intersectsRadius(double lat, double lon, double radius) {
+    private boolean intersectsRadius(
+            double lat,
+            double lon,
+            double radius
+    ) {
         double closestX = Math.max(minX, Math.min(lon, maxX));
         double closestY = Math.max(minY, Math.min(lat, maxY));
-        return distance(lat, lon, closestY, closestX) <= radius;
+        return calculateDistance(lat, lon, closestY, closestX) <= radius;
     }
 
-    public static double distance(double lat1, double lon1, double lat2, double lon2) {
-        // Create cache key
-        String key = String.valueOf(lat1) + ',' + lon1 + '-' + lat2 + ',' + lon2;
-
-        // Check cache first
-        Double cachedDistance = distanceCache.get(key);
-        if (cachedDistance != null) return cachedDistance;
-        double distance = calculateDistance(lat1, lon1, lat2, lon2);
-        if (distanceCache.size() < 10000) distanceCache.put(key, distance);
-        return distance;
-    }
-
-    public static double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    public static double calculateDistance(
+            double lat1,
+            double lon1,
+            double lat2,
+            double lon2
+    ) {
         final double EARTH_RADIUS = 6371000;
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);

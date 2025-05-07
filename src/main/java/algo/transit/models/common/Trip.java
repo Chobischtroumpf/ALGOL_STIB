@@ -11,7 +11,10 @@ public class Trip {
     private final ArrayList<Stop> stops = new ArrayList<>();
     private final ArrayList<LocalTime> times = new ArrayList<>();
 
-    public Trip(String tripId, Route route) {
+    public Trip(
+            String tripId,
+            Route route
+    ) {
         this.tripId = tripId;
         this.route = route;
     }
@@ -33,7 +36,11 @@ public class Trip {
         return route;
     }
 
-    public void addStopTime(int stopSequence, @NotNull LocalTime time, @NotNull Stop stop) {
+    public void addStopTime(
+            int stopSequence,
+            @NotNull LocalTime time,
+            @NotNull Stop stop
+    ) {
         while (stops.size() <= stopSequence) {
             stops.add(null);
             times.add(null);
@@ -50,10 +57,7 @@ public class Trip {
     }
 
     public LocalTime getTimeForStop(@NotNull Stop stop) {
-        // Reference equality
         for (int i = 0; i < stops.size(); i++) if (stops.get(i) == stop) return times.get(i);
-        // Fall back to equals
-        for (int i = 0; i < stops.size(); i++) if (stop.equals(stops.get(i))) return times.get(i);
         return null;
     }
 

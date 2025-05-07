@@ -11,10 +11,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CommandLineParser {
+public class CLParser {
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    public static class CommandLineArgs {
+    public static class CLArgs {
         public String startStop;
         public String endStop;
         public LocalTime startTime;
@@ -22,14 +22,10 @@ public class CommandLineParser {
         public double maxWalkTime = 10.0;
         public List<TType> forbiddenModes = new ArrayList<>();
         public Map<TType, Double> modeWeights = new HashMap<>();
-        public double modeSwitchPenalty = 5.0;
-        public int maxTransfers = 50;
         public boolean visualize = false;
         public boolean arriveBy = false;
-        public double maxWaitTime = -1.0;  // -1 means use default rules
-        public double minTransferTime = 3.0;  // default: 3 minutes
-        public String optimizationGoal = "time";  // default: optimize for time
-        public String outputFormat = "detailed";  // default: detailed output
+        public String optimizationGoal = "time";
+        public String outputFormat = "detailed";
         public boolean showStats = false;
     }
 
@@ -40,20 +36,16 @@ public class CommandLineParser {
         System.out.println("  --max-walk-time <time>       Set maximum walking time in minutes (default: 10.0)");
         System.out.println("  --forbidden-modes <modes>    Set forbidden transport modes (e.g., BUS, TRAIN)");
         System.out.println("  --mode-weights <mode:weight> Set custom weights for transport modes");
-        System.out.println("  --mode-switch-penalty <p>    Set penalty for mode switching (default: 5.0)");
-        System.out.println("  --max-transfers <number>     Set maximum number of transfers allowed (default: 50)");
-        System.out.println("  --max-wait-time <minutes>    Set maximum wait time for connections (default: auto)");
-        System.out.println("  --min-transfer-time <min>    Set minimum time needed for transfers (default: 3.0)");
         System.out.println("  --arrive-by                  Find path arriving at specified time, not departing");
         System.out.println("  --optimization-goal <goal>   Set optimization goal: time|transfers|walking (default: time)");
-        System.out.println("  --output-format <format>     Set output format: detailed|summary|json|csv (default: detailed)");
+        System.out.println("  --output-format <format>     Set output format: detailed|summary (default: detailed)");
         System.out.println("  --show-stats                 Show detailed statistics about the found path");
         System.out.println("  --visualize                  Enable visualization of the pathfinding algorithm");
         System.out.println("  --help                       Display this help message");
     }
 
-    public static @NotNull CommandLineArgs parseCommandLineArgs(String @NotNull [] args) {
-        CommandLineArgs cmdArgs = new CommandLineArgs();
+    public static @NotNull CLParser.CLArgs parseCommandLineArgs(String @NotNull [] args) {
+        CLArgs cmdArgs = new CLArgs();
 
         if (args.length < 3) {
             throw new IllegalArgumentException("Insufficient arguments. Use --help for usage information.");
@@ -125,34 +117,6 @@ public class CommandLineParser {
                             }
                         }
                     }
-                    case "--mode-switch-penalty" -> {
-                        if (i + 1 < args.length) {
-                            cmdArgs.modeSwitchPenalty = Double.parseDouble(args[++i]);
-                        } else {
-                            throw new IllegalArgumentException("Missing value for --mode-switch-penalty");
-                        }
-                    }
-                    case "--max-transfers" -> {
-                        if (i + 1 < args.length) {
-                            cmdArgs.maxTransfers = Integer.parseInt(args[++i]);
-                        } else {
-                            throw new IllegalArgumentException("Missing value for --max-transfers");
-                        }
-                    }
-                    case "--max-wait-time" -> {
-                        if (i + 1 < args.length) {
-                            cmdArgs.maxWaitTime = Double.parseDouble(args[++i]);
-                        } else {
-                            throw new IllegalArgumentException("Missing value for --max-wait-time");
-                        }
-                    }
-                    case "--min-transfer-time" -> {
-                        if (i + 1 < args.length) {
-                            cmdArgs.minTransferTime = Double.parseDouble(args[++i]);
-                        } else {
-                            throw new IllegalArgumentException("Missing value for --min-transfer-time");
-                        }
-                    }
                     case "--arrive-by" -> cmdArgs.arriveBy = true;
                     case "--optimization-goal" -> {
                         if (i + 1 < args.length) {
@@ -171,12 +135,11 @@ public class CommandLineParser {
                     case "--output-format" -> {
                         if (i + 1 < args.length) {
                             String format = args[++i].toLowerCase();
-                            if (format.equals("detailed") || format.equals("summary") ||
-                                    format.equals("json") || format.equals("csv")) {
+                            if (format.equals("detailed") || format.equals("summary")) {
                                 cmdArgs.outputFormat = format;
                             } else {
                                 System.err.println("Invalid output format: " + format +
-                                        ". Using default (detailed). Valid options: detailed, summary, json, csv");
+                                        ". Using default (detailed). Valid options: detailed, summary");
                                 cmdArgs.outputFormat = "detailed";
                             }
                         } else {

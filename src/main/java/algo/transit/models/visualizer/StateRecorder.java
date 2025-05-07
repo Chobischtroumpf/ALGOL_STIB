@@ -12,7 +12,10 @@ public class StateRecorder {
     public String startStopId;
     public String endStopId;
 
-    public void setStartAndEndStops(String startStopId, String endStopId) {
+    public void setStartAndEndStops(
+            String startStopId,
+            String endStopId
+    ) {
         this.startStopId = startStopId;
         this.endStopId = endStopId;
     }

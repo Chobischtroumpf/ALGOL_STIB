@@ -9,6 +9,7 @@ import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
 import com.jogamp.opengl.util.awt.TextRenderer;
 import com.jogamp.opengl.util.gl2.GLUT;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -128,7 +129,7 @@ public class DVisualizer extends JFrame implements GLEventListener {
         return controlPanel;
     }
 
-    public void setAlgorithmData(StateRecorder recorder) {
+    public void setAlgorithmData(@NotNull StateRecorder recorder) {
         this.recorder = recorder;
 
         // Set start and end stops
@@ -254,14 +255,20 @@ public class DVisualizer extends JFrame implements GLEventListener {
     }
 
     // Convert geographic coordinates to screen coordinates
-    private float[] geoToScreen(double lat, double lon, int width, int height) {
+    @Contract(value = "_, _, _, _ -> new", pure = true)
+    private float @NotNull [] geoToScreen(
+            double lat,
+            double lon,
+            int width,
+            int height
+    ) {
         float x = (float) ((lon - minLon) / (maxLon - minLon) * width);
         float y = height - (float) ((lat - minLat) / (maxLat - minLat) * height);
         return new float[]{x, y};
     }
 
     @Override
-    public void init(GLAutoDrawable drawable) {
+    public void init(@NotNull GLAutoDrawable drawable) {
         GL2 gl = drawable.getGL().getGL2();
 
         // Initialize OpenGL settings
@@ -282,7 +289,7 @@ public class DVisualizer extends JFrame implements GLEventListener {
     }
 
     @Override
-    public void display(GLAutoDrawable drawable) {
+    public void display(@NotNull GLAutoDrawable drawable) {
         GL2 gl = drawable.getGL().getGL2();
         gl.glClear(GL2.GL_COLOR_BUFFER_BIT);
 
@@ -463,7 +470,13 @@ public class DVisualizer extends JFrame implements GLEventListener {
     }
 
     @Override
-    public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
+    public void reshape(
+            @NotNull GLAutoDrawable drawable,
+            int x,
+            int y,
+            int width,
+            int height
+    ) {
         GL2 gl = drawable.getGL().getGL2();
         gl.glViewport(0, 0, width, height);
     }

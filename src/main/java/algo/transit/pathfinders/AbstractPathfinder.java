@@ -9,20 +9,23 @@ import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.utils.QuadTree;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Duration;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
+import static algo.transit.utils.TimeUtils.calculateMinutesBetween;
+
 public abstract class AbstractPathfinder {
     protected final Map<String, Stop> stops;
     protected final QuadTree stopQuadTree;
+
+    // Constants for spatial indexing
     protected static final double MAX_LATITUDE = 52.0;
     protected static final double MIN_LATITUDE = 49.0;
     protected static final double MAX_LONGITUDE = 7.0;
     protected static final double MIN_LONGITUDE = 2.0;
 
-    // Recording of algorithm steps
+    // Recorder for visualizing the pathfinding process
     public StateRecorder recorder;
 
     protected AbstractPathfinder(Map<String, Stop> stops) {
@@ -57,25 +60,63 @@ public abstract class AbstractPathfinder {
             String lastMode,
             @NotNull TPreference preferences
     ) {
-        // Calculate waiting time
         long waitingMinutes = calculateMinutesBetween(currentTime, connection.departureTime());
-
-        // Calculate transit time
         long transitMinutes = calculateMinutesBetween(connection.departureTime(), connection.arrivalTime());
 
-        // Base cost: transit time + waiting time (with lower weight)
-        double cost = transitMinutes + (waitingMinutes * 0.5); // Half penalty for waiting
+        double cost;
+        String goal = preferences.optimizationGoal;
 
-        // Add mode-specific weights for the transit part
+        if (goal == null || goal.isEmpty() || goal.equalsIgnoreCase("time")) {
+            // Default: optimize for time
+            cost = transitMinutes + (waitingMinutes * 0.5); // Half penalty for waiting
+        } else if (goal.equalsIgnoreCase("transfers")) {
+            // Heavily penalize mode changes to minimize transfers
+            cost = transitMinutes + (waitingMinutes * 0.1);
+            // Mode switch penalty will be added below and should be high
+        } else if (goal.equalsIgnoreCase("walking")) {
+            // Heavily penalize walking
+            if (connection.mode().equals("FOOT")) {
+                cost = transitMinutes * 5.0; // 5x penalty for walking time
+            } else {
+                cost = transitMinutes + (waitingMinutes * 0.5);
+            }
+        } else {
+            // Default if optimization goal is unrecognized
+            cost = transitMinutes + (waitingMinutes * 0.5);
+        }
+
+        // Apply mode-specific weights
         TType mode = TType.fromString(connection.mode());
         Double modeWeight = preferences.modeWeights.get(mode);
         if (modeWeight != null) {
             // Only apply weight to the transit time, not the waiting time
-            cost = (waitingMinutes * 0.5) + (transitMinutes * modeWeight);
+            if (goal != null && goal.equalsIgnoreCase("transfers")) {
+                // For transfer optimization, still preserve some weight difference
+                cost = (waitingMinutes * 0.1) + (transitMinutes * Math.min(1.5, modeWeight));
+            } else {
+                cost = (waitingMinutes * 0.5) + (transitMinutes * modeWeight);
+            }
         }
 
-        // Add mode switch penalty
-        if (!lastMode.equals("NONE") && !lastMode.equals(connection.mode())) cost += preferences.modeSwitchPenalty;
+        // When we detect a mode change, enforce minimum transfer time
+        if (!lastMode.equals("NONE") && !lastMode.equals(connection.mode())) {
+            // SPECIAL CASE FOR WALKING - skip the wait time check
+            if (connection.mode().equals("FOOT")) {
+                double penalty = calculateModeSwitchPenalty(lastMode, connection.mode(), goal);
+                cost += penalty;
+            } else {
+                // For non-walking modes, check transfer time as usual
+                Stop fromStop = stops.get(connection.fromStop());
+                Stop toStop = stops.get(connection.toStop());
+                double minTransferTime = calculateTransferTime(fromStop, toStop);
+
+                if (waitingMinutes < minTransferTime) return -1.0;
+
+                double penalty = calculateModeSwitchPenalty(lastMode, connection.mode(), goal);
+                cost += penalty;
+            }
+        }
+
         return Math.max(0.1, cost); // Ensure positive cost
     }
 
@@ -88,25 +129,24 @@ public abstract class AbstractPathfinder {
             @NotNull Stop targetStop
     ) {
         // Calculate current and next distances to target
-        double currentDistance = QuadTree.distance(
+        double currentDistance = QuadTree.calculateDistance(
                 currentStop.latitude, currentStop.longitude,
                 targetStop.latitude, targetStop.longitude
         );
 
-        double nextDistance = QuadTree.distance(
+        double nextDistance = QuadTree.calculateDistance(
                 nextStop.latitude, nextStop.longitude,
                 targetStop.latitude, targetStop.longitude
         );
 
         // Skip if we're moving significantly away from the target
-        // Allow some deviation (125%) to account for non-direct routes
         double deviationTolerance = 1.25;
 
         // For shorter segments, allow more deviation
         if (currentDistance < 5000) deviationTolerance = 2.0; // Allow more deviation for local transit
 
         // Calculate direct distance between stops
-        double segmentDistance = QuadTree.distance(
+        double segmentDistance = QuadTree.calculateDistance(
                 currentStop.latitude, currentStop.longitude,
                 nextStop.latitude, nextStop.longitude
         );
@@ -136,118 +176,104 @@ public abstract class AbstractPathfinder {
         if (waitingMinutes <= 30) return true;
 
         // Case 2: Reasonable wait time during same day
-        if (waitingMinutes <= 180) return true; // 3 hours max regular wait
+        if (waitingMinutes <= 3 * 60) return true;
 
         // Case 3: Overnight case - first departure next morning
         if (currentTime.getHour() >= 20 && departureTime.getHour() <= 10) {
             // For end-of-day to morning trips, allow longer waiting times
-            return waitingMinutes <= 12 * 60; // Up to 12 hours for overnight
+            return waitingMinutes <= 12 * 60;
         }
 
         // Case 4: Day transition without being overnight case
-        // For other cases, limit to 4 hours wait
-        return waitingMinutes <= 240;
+        return waitingMinutes <= 4 * 60;
     }
 
-    /**
-     * Calculate minutes between two LocalTime objects with adjustments for transit time formats
-     */
-    protected long calculateMinutesBetween(@NotNull LocalTime start, @NotNull LocalTime end) {
-        int startHour = start.getHour();
-        int endHour = end.getHour();
+    protected double calculateTransferTime(
+            Stop fromStop,
+            Stop toStop
+    ) {
+        double baseTime = 2.0;
 
-        // Adjust for GTFS times > 24 hours
-        if (startHour >= 24) startHour %= 24;
-        if (endHour >= 24) endHour %= 24;
+        if (fromStop == null || toStop == null) return baseTime;
 
-        LocalTime adjustedStart = LocalTime.of(startHour, start.getMinute(), start.getSecond());
-        LocalTime adjustedEnd = LocalTime.of(endHour, end.getMinute(), end.getSecond());
+        double distance = QuadTree.calculateDistance(
+                fromStop.latitude, fromStop.longitude,
+                toStop.latitude, toStop.longitude
+        );
 
-        // If end appears before start, assume it's the next day
-        if (adjustedEnd.isBefore(adjustedStart)) adjustedEnd = adjustedEnd.plusHours(24);
+        double transferTime = baseTime + (distance / 100.0);
 
-        // Calculate duration
-        Duration duration = Duration.between(adjustedStart, adjustedEnd);
-        return duration.toMinutes();
+        // Station complexity factor based on number of routes
+        // More routes = more complex station = more transfer time
+        int fromRoutes = fromStop.routes.size();
+        int toRoutes = toStop.routes.size();
+
+        if (fromRoutes > 5 || toRoutes > 5) { transferTime += 2.0;
+        } else if (fromRoutes > 2 || toRoutes > 2) { transferTime += 1.0; }
+
+        return Math.min(Math.max(transferTime, 1.0), 5.0);
     }
 
-    /**
-     * Checks if one time is before another
-     */
-    protected boolean isBefore(@NotNull LocalTime time1, @NotNull LocalTime time2) {
-        // Normalize hours to 0-23 range
-        int hour1 = time1.getHour() % 24;
-        int hour2 = time2.getHour() % 24;
+    protected double calculateModeSwitchPenalty(
+            String fromMode,
+            String toMode,
+            String optimizationGoal
+    ) {
+        double penalty = 5.0;
 
-        // If hours are equal, compare minutes
-        if (hour1 == hour2) return time1.getMinute() < time2.getMinute();
-        return hour1 < hour2;
-    }
-
-    /**
-     * Checks if one time is after another
-     */
-    protected boolean isAfter(@NotNull LocalTime time1, LocalTime time2) {
-        return !time1.equals(time2) && !isBefore(time1, time2);
-    }
-
-    /**
-     * Prints the found path
-     */
-    public void printPath(@NotNull List<Transition> path) {
-        if (path.isEmpty()) {
-            System.out.println("No path found.");
-            return;
+        // Higher penalty for transfers optimization
+        if ("transfers".equalsIgnoreCase(optimizationGoal)) {
+            penalty = 50.0;
+            return penalty;
         }
 
-        System.out.println("\nOptimal route:");
-        System.out.println("======================");
+        // Mode-specific adjustments
+        if (fromMode.equals("TRAIN") && toMode.equals("BUS")) { penalty = 8.0;
+        } else if (fromMode.equals("BUS") && toMode.equals("BUS")) { penalty = 4.0;
+        } else if (fromMode.equals("TRAM") && toMode.equals("TRAM")) { penalty = 3.0;
+        } else if (fromMode.equals("FOOT") || toMode.equals("FOOT")) { penalty = 2.0; }
 
-        Transition firstTransition = path.getFirst();
-        Transition lastTransition = path.getLast();
+        return penalty;
+    }
 
-        LocalTime startTime = firstTransition.departure();
-        LocalTime endTime = lastTransition.arrival();
+    protected int calculateMaxTransfers(
+            Stop startStop,
+            Stop endStop,
+            String optimizationGoal
+    ) {
+        if (startStop == null || endStop == null) return 5;
 
-        long totalMinutes = calculateMinutesBetween(startTime, endTime);
+        double distance = QuadTree.calculateDistance(
+                startStop.latitude, startStop.longitude,
+                endStop.latitude, endStop.longitude
+        );
 
-        System.out.println("From: " + stops.get(firstTransition.fromStop()).name);
-        System.out.println("To: " + stops.get(lastTransition.toStop()).name);
-        System.out.println("Departure: " + startTime);
-        System.out.println("Arrival: " + endTime);
-        System.out.println("Total travel time: " + totalMinutes + " minutes");
-        System.out.println("======================");
+        // Scale based on distance
+        int maxTransfers;
 
-        // Print detailed path
-        int i = 0;
-        while (i < path.size()) {
-            Transition current = path.get(i);
-            String currentMode = current.mode();
-            String currentRoute = current.route();
+        if (distance < 1000) { maxTransfers = 4;
+        } else if (distance < 5000) { maxTransfers = 6;
+        } else if (distance < 20000) { maxTransfers = 8;
+        } else if (distance < 50000) { maxTransfers = 10;
+        } else if (distance < 100000) { maxTransfers = 12;
+        } else { maxTransfers = 15; }
 
-            // Find the last consecutive transition with the same mode and route
-            int j = i;
-            while (j + 1 < path.size() &&
-                    path.get(j + 1).mode().equals(currentMode) &&
-                    path.get(j + 1).route().equals(currentRoute) &&
-                    !currentMode.equals("FOOT")) {
-                j++;
-            }
+        if ("walking".equalsIgnoreCase(optimizationGoal)) maxTransfers += 2;
+        return maxTransfers;
+    }
 
-            // Print as a single segment if multiple transitions were found
-            Stop fromStop = stops.get(current.fromStop());
-            Stop toStop = stops.get(path.get(j).toStop());
+    protected double calculateMaxWaitTime(@NotNull LocalTime currentTime) {
+        int hour = currentTime.getHour();
 
-            System.out.println((i + 1) + ". " + currentMode +
-                    (currentRoute.isEmpty() ? "" : " " + currentRoute) +
-                    " from " + fromStop.name +
-                    " (" + current.departure() + ") to " +
-                    toStop.name + " (" + path.get(j).arrival() + ")");
+        // Late night/early morning
+        if (hour >= 22 || hour < 6) return 60.0;
 
-            // Move index to next segment
-            i = j + 1;
-        }
+        // Rush hours
+        if ((hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18)) return 30.0;
 
-        System.out.println("======================");
+        // Normal daytime
+        if (hour >= 6 && hour <= 21) return 45.0;
+
+        return 60.0;
     }
 }

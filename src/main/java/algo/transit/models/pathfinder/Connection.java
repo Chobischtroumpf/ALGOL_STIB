@@ -17,10 +17,14 @@ public record Connection(
 ) {
 
     @Contract("_, _, _, _ -> new")
-    public static @NotNull Connection createWalkingConnection(String fromStop, String toStop,
-                                                              LocalTime currentTime, int walkTimeMinutes) {
+    public static @NotNull Connection createWalkingConnection(
+            String fromStop,
+            String toStop,
+            LocalTime currentTime,
+            int walkTimeMinutes
+    ) {
         // Very short walks are treated as transfers with no time cost
-        if (walkTimeMinutes <= 2) {
+        if (walkTimeMinutes <= 1) {
             return new Connection(
                     fromStop,
                     toStop,

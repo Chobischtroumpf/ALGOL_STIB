@@ -15,6 +15,9 @@ import org.jetbrains.annotations.NotNull;
 import java.time.LocalTime;
 import java.util.*;
 
+import static algo.transit.utils.TimeUtils.isAfter;
+import static algo.transit.utils.TimeUtils.isBefore;
+
 public class DPathfinder extends AbstractPathfinder {
 
     public DPathfinder(Map<String, Stop> stops) {
@@ -42,11 +45,8 @@ public class DPathfinder extends AbstractPathfinder {
             return Collections.emptyList();
         }
 
-        double directDistance = QuadTree.distance(
-                startStop.latitude, startStop.longitude,
-                endStop.latitude, endStop.longitude
-        );
-        System.out.println("Direct distance: " + directDistance + " meters");
+        // Calculate max transfers based on journey distance
+        int maxTransfers = calculateMaxTransfers(startStop, endStop, preferences.optimizationGoal);
 
         // Initialize Dijkstra algorithm
         PriorityQueue<DijkstraState> priorityQueue = new PriorityQueue<>();
@@ -67,14 +67,12 @@ public class DPathfinder extends AbstractPathfinder {
             recorder.recordExploredState(current.stopId);
 
             // Log progress periodically
-            if (iterations % 1000 == 0) System.out.println("Iteration " + iterations + ": " + current);
+            if (iterations % 1000 == 0) System.out.println("Iteration: " + iterations + " " + current);
 
             // If we've reached the destination, return the path
             if (current.stopId.equals(endStopId)) {
                 System.out.println("Path found in " + iterations + " iterations");
-
                 recorder.recordFinalPath(current.path);
-
                 return current.path;
             }
 
@@ -83,12 +81,18 @@ public class DPathfinder extends AbstractPathfinder {
             if (bestCost != null && bestCost < current.cost) continue;
 
             // Skip if we've reached the maximum number of transfers
-            if (current.transfers > preferences.maxTransfers) continue;
+            if (current.transfers > maxTransfers) continue;
+
+            // Get max wait time based on time of day
+            double maxWaitTime = calculateMaxWaitTime(current.time);
 
             // Generate and process all possible transitions from current state
-            List<Connection> connections = findPossibleConnections(current, preferences, endStop);
+            List<Connection> connections = findPossibleConnections(current, preferences, endStop, maxWaitTime);
             for (Connection connection : connections) {
                 double transitionCost = calculateTransitionCost(current.time, connection, current.lastMode, preferences);
+
+                if (transitionCost < 0) continue;
+
                 DijkstraState successor = getDijkstraState(connection, transitionCost, current);
                 Double existingCost = bestCosts.get(connection.toStop());
 
@@ -158,13 +162,14 @@ public class DPathfinder extends AbstractPathfinder {
     private @NotNull List<Connection> findPossibleConnections(
             @NotNull DijkstraState current,
             TPreference preferences,
-            Stop targetStop
+            Stop targetStop,
+            double maxWaitTime
     ) {
         List<Connection> connections = new ArrayList<>();
         Stop currentStop = stops.get(current.stopId);
 
         if (currentStop == null) return connections;
-        addTransitConnections(connections, current, currentStop, preferences, targetStop);
+        addTransitConnections(connections, current, currentStop, preferences, targetStop, maxWaitTime);
         addWalkingConnections(connections, current, currentStop, preferences);
 
         return connections;
@@ -174,8 +179,9 @@ public class DPathfinder extends AbstractPathfinder {
             List<Connection> connections,
             @NotNull DijkstraState current,
             @NotNull Stop currentStop,
-            TPreference preferences,
-            Stop targetStop
+            @NotNull TPreference preferences,
+            Stop targetStop,
+            double maxWaitTime
     ) {
         LocalTime currentTime = current.time;
 
@@ -190,7 +196,7 @@ public class DPathfinder extends AbstractPathfinder {
             if (tripStopTime == null || isBefore(tripStopTime, currentTime)) continue;
 
             // Time window pruning - skip connections with excessive wait times
-            if (!isWorthConsideringTime(currentTime, tripStopTime)) continue;
+            if (!isWorthConsideringTime(currentTime, tripStopTime, maxWaitTime)) continue;
 
             // Get all stops after this one in the trip
             List<Stop> tripStops = trip.getOrderedStops();
@@ -255,7 +261,7 @@ public class DPathfinder extends AbstractPathfinder {
             if (nearbyStop.stopId.equals(currentStop.stopId)) continue;
 
             // Calculate walking time
-            double distance = QuadTree.distance(
+            double distance = QuadTree.calculateDistance(
                     currentStop.latitude, currentStop.longitude,
                     nearbyStop.latitude, nearbyStop.longitude
             );

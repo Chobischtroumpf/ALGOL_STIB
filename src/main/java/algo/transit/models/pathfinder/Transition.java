@@ -5,8 +5,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalTime;
 
-public record Transition(String fromStop, String toStop, String mode, String route, LocalTime departure,
-                         LocalTime arrival, double cost) {
+public record Transition(
+        String fromStop,
+        String toStop,
+        String mode,
+        String route,
+        LocalTime departure,
+        LocalTime arrival,
+        double cost
+) {
 
     @Contract(value = "_, _ -> new", pure = true)
     public static @NotNull Transition fromConnection(@NotNull Connection connection, double cost) {
