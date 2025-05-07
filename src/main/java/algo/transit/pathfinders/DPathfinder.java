@@ -26,7 +26,7 @@ public class DPathfinder extends AbstractPathfinder {
 
     @Contract("_, _, _ -> new")
     private static @NotNull DijkstraState getDijkstraState(
-            Connection connection,
+            @NotNull Connection connection,
             double transitionCost,
             @NotNull DijkstraState current
     ) {
