@@ -169,13 +169,9 @@ public abstract class AbstractPathfinder {
      */
     protected boolean isWorthConsideringTime(
             LocalTime currentTime,
-            LocalTime departureTime,
-            double maxWaitTime
+            LocalTime departureTime
     ) {
         long waitingMinutes = calculateMinutesBetween(currentTime, departureTime);
-
-        // If maxWaitTime is specified, use it as the upper limit
-        if (maxWaitTime > 0) return waitingMinutes <= maxWaitTime;
 
         // Otherwise, use the default rules
         // Case 1: Very short wait (always consider)
@@ -248,20 +244,5 @@ public abstract class AbstractPathfinder {
         }
 
         return penalty;
-    }
-
-    protected double calculateMaxWaitTime(@NotNull LocalTime currentTime) {
-        int hour = currentTime.getHour();
-
-        // Late night/early morning
-        if (hour >= 22 || hour < 6) return 60.0;
-
-        // Rush hours
-        if ((hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18)) return 30.0;
-
-        // Normal daytime
-        if (hour >= 6 && hour <= 21) return 45.0;
-
-        return 60.0;
     }
 }

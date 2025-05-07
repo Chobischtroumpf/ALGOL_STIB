@@ -112,11 +112,8 @@ public class DPathfinder extends AbstractPathfinder {
             Double bestCost = bestCosts.get(current.stopId);
             if (bestCost != null && bestCost < current.cost) continue;
 
-            // Get max wait time based on time of day
-            double maxWaitTime = calculateMaxWaitTime(current.time);
-
             // Generate and process all possible transitions from current state
-            List<Connection> connections = findPossibleConnections(current, preferences, endStop, maxWaitTime);
+            List<Connection> connections = findPossibleConnections(current, preferences, endStop);
             for (Connection connection : connections) {
                 double transitionCost = calculateTransitionCost(
                         current.time,
@@ -144,14 +141,13 @@ public class DPathfinder extends AbstractPathfinder {
     private @NotNull List<Connection> findPossibleConnections(
             @NotNull DijkstraState current,
             TPreference preferences,
-            Stop targetStop,
-            double maxWaitTime
+            Stop targetStop
     ) {
         List<Connection> connections = new ArrayList<>();
         Stop currentStop = stops.get(current.stopId);
 
         if (currentStop == null) return connections;
-        addTransitConnections(connections, current, currentStop, preferences, targetStop, maxWaitTime);
+        addTransitConnections(connections, current, currentStop, preferences, targetStop);
         addWalkingConnections(connections, current, currentStop, preferences);
 
         return connections;
@@ -162,8 +158,7 @@ public class DPathfinder extends AbstractPathfinder {
             @NotNull DijkstraState current,
             @NotNull Stop currentStop,
             @NotNull TPreference preferences,
-            Stop targetStop,
-            double maxWaitTime
+            Stop targetStop
     ) {
         LocalTime currentTime = current.time;
 
@@ -178,7 +173,7 @@ public class DPathfinder extends AbstractPathfinder {
             if (tripStopTime == null || isBefore(tripStopTime, currentTime)) continue;
 
             // Time window pruning - skip connections with excessive wait times
-            if (!isWorthConsideringTime(currentTime, tripStopTime, maxWaitTime)) continue;
+            if (!isWorthConsideringTime(currentTime, tripStopTime)) continue;
 
             // Get all stops after this one in the trip
             List<Stop> tripStops = trip.getOrderedStops();
