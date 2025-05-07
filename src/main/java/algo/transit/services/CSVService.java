@@ -1,8 +1,8 @@
 package algo.transit.services;
 
-import algo.transit.models.Route;
-import algo.transit.models.Stop;
-import algo.transit.models.Trip;
+import algo.transit.models.common.Route;
+import algo.transit.models.common.Stop;
+import algo.transit.models.common.Trip;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import com.opencsv.exceptions.CsvValidationException;

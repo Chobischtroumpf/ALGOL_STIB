@@ -1,4 +1,4 @@
-package algo.transit.models;
+package algo.transit.models.common;
 
 import java.util.*;
 

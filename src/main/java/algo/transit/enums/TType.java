@@ -1,6 +1,6 @@
 package algo.transit.enums;
 
-public enum TransportType {
+public enum TType {
     BUS,
     TRAIN,
     TRAM,
@@ -8,7 +8,7 @@ public enum TransportType {
     FOOT,
     UNKNOWN;
 
-    public static TransportType fromString(String typeStr) {
+    public static TType fromString(String typeStr) {
         if (typeStr == null || typeStr.isEmpty()) return UNKNOWN;
 
         try {

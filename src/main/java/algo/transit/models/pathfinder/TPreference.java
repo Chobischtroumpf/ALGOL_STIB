@@ -1,23 +1,23 @@
-package algo.transit.models;
+package algo.transit.models.pathfinder;
 
-import algo.transit.enums.TransportType;
+import algo.transit.enums.TType;
 
 import java.util.List;
 import java.util.Map;
 
-public class TransitPreference {
+public class TPreference {
     public double walkingSpeed;
     public double maxWalkingTime;
-    public Map<TransportType, Double> modeWeights;
-    public List<TransportType> forbiddenModes;
+    public Map<TType, Double> modeWeights;
+    public List<TType> forbiddenModes;
     public double modeSwitchPenalty;
     public int maxTransfers;
 
-    public TransitPreference(
+    public TPreference(
             double walkingSpeed,
             double maxWalkingTime,
-            Map<TransportType, Double> modeWeights,
-            List<TransportType> forbiddenModes,
+            Map<TType, Double> modeWeights,
+            List<TType> forbiddenModes,
             double modeSwitchPenalty,
             int maxTransfers
     ) {

@@ -1,7 +1,12 @@
 package algo.transit;
 
-import algo.transit.enums.TransportType;
-import algo.transit.models.*;
+import algo.transit.enums.TType;
+import algo.transit.models.common.Route;
+import algo.transit.models.common.Stop;
+import algo.transit.models.common.Trip;
+import algo.transit.models.pathfinder.TPreference;
+import algo.transit.models.pathfinder.Transition;
+import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.pathfinders.DPathfinder;
 import algo.transit.services.CSVService;
 import algo.transit.utils.QuadTree;
@@ -16,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Main {
+public class ALGOL {
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     public static void main(String[] args) {
@@ -47,7 +52,7 @@ public class Main {
             }
 
             // Create preferences
-            TransitPreference preferences = new TransitPreference(
+            TPreference preferences = new TPreference(
                     cmdArgs.walkingSpeed,
                     cmdArgs.maxWalkTime,
                     cmdArgs.modeWeights,
@@ -69,7 +74,7 @@ public class Main {
 
             // If visualization was enabled, wait for the user to close the window
             if (cmdArgs.visualize) {
-                PathfindingRecorder recorder = dPathfinder.recorder;
+                StateRecorder recorder = dPathfinder.recorder;
 
                 // Create and configure the visualizer
                 DVisualizer visualizer = new DVisualizer(stops);
@@ -91,8 +96,8 @@ public class Main {
         public LocalTime startTime;
         public double walkingSpeed = 80.0;
         public double maxWalkTime = 10.0;
-        public List<TransportType> forbiddenModes = new ArrayList<>();
-        public Map<TransportType, Double> modeWeights = new HashMap<>();
+        public List<TType> forbiddenModes = new ArrayList<>();
+        public Map<TType, Double> modeWeights = new HashMap<>();
         public double modeSwitchPenalty = 5.0;
         public int maxTransfers = 50;
         public boolean visualize = false;
@@ -125,7 +130,7 @@ public class Main {
             } else if (arg.equals("--forbidden-modes") && i + 1 < args.length) {
                 while (i + 1 < args.length && !args[i + 1].startsWith("--")) {
                     try {
-                        cmdArgs.forbiddenModes.add(TransportType.valueOf(args[++i]));
+                        cmdArgs.forbiddenModes.add(TType.valueOf(args[++i]));
                     } catch (IllegalArgumentException e) {
                         System.err.println("Invalid transport type: " + args[i] + ". Skipping.");
                     }
@@ -136,7 +141,7 @@ public class Main {
                     String[] parts = weightSpec.split(":");
                     if (parts.length == 2) {
                         try {
-                            cmdArgs.modeWeights.put(TransportType.valueOf(parts[0]), Double.parseDouble(parts[1]));
+                            cmdArgs.modeWeights.put(TType.valueOf(parts[0]), Double.parseDouble(parts[1]));
                         } catch (NumberFormatException e) {
                             System.err.println("Invalid weight format: " + weightSpec + ". Expected format: mode:weight");
                         } catch (IllegalArgumentException e) {

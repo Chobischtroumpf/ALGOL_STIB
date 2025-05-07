@@ -1,9 +1,11 @@
-package algo.transit.models;
+package algo.transit.models.visualizer;
+
+import algo.transit.models.pathfinder.Transition;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class PathfindingRecorder {
+public class StateRecorder {
     public final List<String> exploredStates = new ArrayList<>();
     public List<Transition> finalPath = new ArrayList<>();
 

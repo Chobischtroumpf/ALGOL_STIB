@@ -1,6 +1,6 @@
 package algo.transit.utils;
 
-import algo.transit.models.Stop;
+import algo.transit.models.common.Stop;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 

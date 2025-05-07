@@ -1,8 +1,8 @@
 package algo.transit.visualizers;
 
-import algo.transit.models.PathfindingRecorder;
-import algo.transit.models.Stop;
-import algo.transit.models.Transition;
+import algo.transit.models.visualizer.StateRecorder;
+import algo.transit.models.common.Stop;
+import algo.transit.models.pathfinder.Transition;
 
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
@@ -34,7 +34,7 @@ public class DVisualizer extends JFrame implements GLEventListener {
     private final Map<String, Stop> stops;
     private Stop startStop;
     private Stop endStop;
-    private PathfindingRecorder recorder;
+    private StateRecorder recorder;
     private List<Transition> finalPath = new ArrayList<>();
     private final Set<String> pathIntermediateStops = new HashSet<>();
 
@@ -52,7 +52,7 @@ public class DVisualizer extends JFrame implements GLEventListener {
     private final java.util.concurrent.CountDownLatch completionLatch = new java.util.concurrent.CountDownLatch(1);
 
     public DVisualizer(Map<String, Stop> stops) {
-        super("ALGOL DPathfinder Visualizer");
+        super("ALGOL Pathfinder Visualizer");
         this.stops = stops;
 
         // Create OpenGL capabilities profile
@@ -128,7 +128,7 @@ public class DVisualizer extends JFrame implements GLEventListener {
         return controlPanel;
     }
 
-    public void setAlgorithmData(PathfindingRecorder recorder) {
+    public void setAlgorithmData(StateRecorder recorder) {
         this.recorder = recorder;
 
         // Set start and end stops

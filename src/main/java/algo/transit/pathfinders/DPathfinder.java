@@ -1,7 +1,13 @@
 package algo.transit.pathfinders;
 
-import algo.transit.enums.TransportType;
-import algo.transit.models.*;
+import algo.transit.enums.TType;
+import algo.transit.models.common.Route;
+import algo.transit.models.common.Stop;
+import algo.transit.models.common.Trip;
+import algo.transit.models.pathfinder.Connection;
+import algo.transit.models.pathfinder.TPreference;
+import algo.transit.models.pathfinder.Transition;
+import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.utils.QuadTree;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +25,7 @@ public class DPathfinder {
     private static final double MIN_LONGITUDE = 2.0;
 
     // Recording of algorithm steps
-    public PathfindingRecorder recorder;
+    public StateRecorder recorder;
 
     public DPathfinder(Map<String, Stop> stops) {
         this.stops = stops;
@@ -41,9 +47,9 @@ public class DPathfinder {
             String startStopId,
             String endStopId,
             LocalTime startTime,
-            TransitPreference preferences
+            TPreference preferences
     ) {
-        recorder = new PathfindingRecorder();
+        recorder = new StateRecorder();
         recorder.setStartAndEndStops(startStopId, endStopId);
 
         Stop startStop = stops.get(startStopId);
@@ -169,7 +175,7 @@ public class DPathfinder {
 
     private @NotNull List<Connection> findPossibleConnections(
             @NotNull DijkstraState current,
-            TransitPreference preferences,
+            TPreference preferences,
             Stop targetStop
     ) {
         List<Connection> connections = new ArrayList<>();
@@ -186,7 +192,7 @@ public class DPathfinder {
             List<Connection> connections,
             @NotNull DijkstraState current,
             @NotNull Stop currentStop,
-            TransitPreference preferences,
+            TPreference preferences,
             Stop targetStop
     ) {
         LocalTime currentTime = current.time;
@@ -250,9 +256,9 @@ public class DPathfinder {
             List<Connection> connections,
             DijkstraState current,
             Stop currentStop,
-            @NotNull TransitPreference preferences
+            @NotNull TPreference preferences
     ) {
-        if (preferences.forbiddenModes.contains(TransportType.FOOT)) return;
+        if (preferences.forbiddenModes.contains(TType.FOOT)) return;
 
         // Find nearby stops within walking distance
         double maxWalkingDistance = preferences.walkingSpeed * preferences.maxWalkingTime;
@@ -289,7 +295,7 @@ public class DPathfinder {
             LocalTime currentTime,
             @NotNull Connection connection,
             String lastMode,
-            @NotNull TransitPreference preferences
+            @NotNull TPreference preferences
     ) {
         // Calculate waiting time
         long waitingMinutes = calculateMinutesBetween(currentTime, connection.departureTime());
@@ -301,7 +307,7 @@ public class DPathfinder {
         double cost = transitMinutes + (waitingMinutes * 0.5); // Half penalty for waiting
 
         // Add mode-specific weights for the transit part
-        TransportType mode = TransportType.fromString(connection.mode());
+        TType mode = TType.fromString(connection.mode());
         Double modeWeight = preferences.modeWeights.get(mode);
         if (modeWeight != null) {
             // Only apply weight to the transit time, not the waiting time

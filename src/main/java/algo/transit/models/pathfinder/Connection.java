@@ -1,4 +1,4 @@
-package algo.transit.models;
+package algo.transit.models.pathfinder;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;

@@ -29,7 +29,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>algo.transit.Main</mainClass>
+                    <mainClass>algo.transit.ALGOL</mainClass>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,6 +1,6 @@
-package algo.transit.models;
+package algo.transit.models.common;
 
-import algo.transit.enums.TransportType;
+import algo.transit.enums.TType;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -10,7 +10,7 @@ public class Route {
     public final String routeId;
     public final String shortName;
     public final String longName;
-    public final TransportType type;
+    public final TType type;
     public final Set<Stop> possibleStops = new HashSet<>();
 
     public Route(String routeID,
@@ -21,7 +21,7 @@ public class Route {
         this.routeId = routeID;
         this.shortName = shortName;
         this.longName = longName;
-        this.type = TransportType.fromString(typeStr);
+        this.type = TType.fromString(typeStr);
     }
 
     @Override
