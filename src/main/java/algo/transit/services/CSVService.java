@@ -12,10 +12,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
@@ -99,41 +97,47 @@ public class CSVService {
 
     public Map<String, Route> getRoutes() {
         Map<String, Route> routes = new HashMap<>();
-        int routeCount = 0;
 
-        for (Path path : routesPaths) {
-            try {
-                System.out.println("Reading routes from " + path.toString());
-                for (Route route : readCSV(path, row -> new Route(row[0].intern(), row[1].intern(), row[2].intern(), row[3].intern()))) {
-                    routes.put(route.routeId, route);
-                    routeCount++;
-                }
-            } catch (Exception e) {
-                System.err.println("Error reading routes from " + path + ": " + e.getMessage());
-            }
-        }
+        List<CompletableFuture<Void>> futures = Arrays.stream(routesPaths)
+                .map(path -> CompletableFuture.runAsync(() -> {
+                    try {
+                        System.out.println("Reading routes from " + path);
+                        for (Route route : readCSV(path, row -> new Route(row[0].intern(), row[1].intern(), row[2].intern(), row[3].intern()))) {
+                            synchronized (routes) {
+                                routes.put(route.routeId, route);
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error reading routes from " + path + ": " + e.getMessage());
+                    }
+                }))
+                .toList();
 
-        System.out.println("Loaded " + routeCount + " routes");
+        futures.forEach(CompletableFuture::join);
+        System.out.println("Loaded " + routes.size() + " routes");
         return routes;
     }
 
     public Map<String, Stop> getStops() {
         Map<String, Stop> stops = new HashMap<>();
-        int stopCount = 0;
 
-        for (Path path : stopsPaths) {
-            try {
-                System.out.println("Reading stops from " + path.toString());
-                for (Stop stop : readCSV(path, row -> new Stop(row[0].intern(), row[1].intern(), Double.parseDouble(row[2]), Double.parseDouble(row[3])))) {
-                    stops.put(stop.stopId, stop);
-                    stopCount++;
-                }
-            } catch (Exception e) {
-                System.err.println("Error reading stops from " + path + ": " + e.getMessage());
-            }
-        }
+        List<CompletableFuture<Void>> futures = Arrays.stream(stopsPaths)
+                .map(path -> CompletableFuture.runAsync(() -> {
+                    try {
+                        System.out.println("Reading stops from " + path);
+                        for (Stop stop : readCSV(path, row -> new Stop(row[0].intern(), row[1].intern(), Double.parseDouble(row[2]), Double.parseDouble(row[3])))) {
+                            synchronized (stops) {
+                                stops.put(stop.stopId, stop);
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error reading stops from " + path + ": " + e.getMessage());
+                    }
+                }))
+                .toList();
 
-        System.out.println("Loaded " + stopCount + " stops");
+        futures.forEach(CompletableFuture::join);
+        System.out.println("Loaded " + stops.size() + " stops");
         return stops;
     }
 
@@ -141,83 +145,90 @@ public class CSVService {
             Map<String, Stop> stops,
             Map<String, Trip> trips
     ) {
-        int stopTimeCount = 0;
-
-        for (Path path : stopTimesPaths) {
-            try {
-                System.out.println("Reading stop times from " + path.toString());
-
-                for (String[] row : readCSV(path, row -> row)) {
-                    if (row.length < 4) {
-                        System.err.println("Invalid stop time row: " + Arrays.toString(row));
-                        continue;
-                    }
-
-                    String tripId = row[0];
-                    String stopId = row[2];
-
-                    LocalTime departureTime;
+        List<CompletableFuture<Integer>> futures = Arrays.stream(stopTimesPaths)
+                .map(path -> CompletableFuture.supplyAsync(() -> {
+                    int count = 0;
                     try {
-                        departureTime = checkTime(row[1]);
-                    } catch (Exception e) {
-                        System.err.println("Invalid time format in stop_times: " + row[1]);
-                        continue;
-                    }
+                        System.out.println("Reading stop times from " + path);
+                        for (String[] row : readCSV(path, r -> r)) {
+                            if (row.length < 4) {
+                                System.err.println("Invalid stop time row: " + Arrays.toString(row));
+                                continue;
+                            }
 
-                    int stopSequence;
-                    try {
-                        stopSequence = Integer.parseInt(row[3]);
-                    } catch (NumberFormatException e) {
-                        System.err.println("Invalid stop sequence: " + row[3]);
-                        continue;
-                    }
+                            String tripId = row[0];
+                            String stopId = row[2];
 
-                    Stop stop = stops.get(stopId);
-                    Trip trip = trips.get(tripId);
+                            LocalTime departureTime;
+                            try {
+                                departureTime = checkTime(row[1]);
+                            } catch (Exception e) {
+                                System.err.println("Invalid time format in stop_times: " + row[1]);
+                                continue;
+                            }
 
-                    if (stop != null && trip != null) {
-                        trip.addStopTime(stopSequence, departureTime, stop);
-                        stopTimeCount++;
+                            int stopSequence;
+                            try {
+                                stopSequence = Integer.parseInt(row[3]);
+                            } catch (NumberFormatException e) {
+                                System.err.println("Invalid stop sequence: " + row[3]);
+                                continue;
+                            }
 
-                        Route route = trip.getRoute();
-                        if (route != null) {
-                            route.possibleStops.add(stop);
-                            stop.routes.put(route.routeId, route);
-                            stop.trips.put(trip.tripId, trip);
+                            Stop stop = stops.get(stopId);
+                            Trip trip = trips.get(tripId);
+
+                            if (stop != null && trip != null) {
+                                synchronized (trip) {
+                                    trip.addStopTime(stopSequence, departureTime, stop);
+                                }
+                                synchronized (trip.getRoute()) {
+                                    trip.getRoute().possibleStops.add(stop);
+                                }
+                                synchronized (stop) {
+                                    stop.routes.put(trip.getRoute().routeId, trip.getRoute());
+                                    stop.trips.put(trip.tripId, trip);
+                                }
+                                count++;
+                            }
                         }
+                    } catch (Exception e) {
+                        System.err.println("Error reading stop times from " + path + ": " + e.getMessage());
                     }
-                }
-            } catch (Exception e) {
-                System.err.println("Error reading stop times from " + path + ": " + e.getMessage());
-            }
-        }
+                    return count;
+                }))
+                .toList();
 
-        System.out.println("Linked " + stopTimeCount + " stop times");
+        int totalCount = futures.stream().mapToInt(CompletableFuture::join).sum();
+        System.out.println("Linked " + totalCount + " stop times");
     }
 
     public Map<String, Trip> getTrips(Map<String, Route> routes) {
         Map<String, Trip> trips = new HashMap<>();
-        int tripCount = 0;
 
-        for (Path path : tripsPaths) {
-            try {
-                System.out.println("Reading trips from " + path.toString());
+        List<CompletableFuture<Void>> futures = Arrays.stream(tripsPaths)
+                .map(path -> CompletableFuture.runAsync(() -> {
+                    try {
+                        System.out.println("Reading trips from " + path);
+                        for (Trip trip : readCSV(path, row -> {
+                            Route route = routes.get(row[1]);
+                            return new Trip(row[0], route);
+                        })) {
+                            synchronized (trips) {
+                                trips.put(trip.tripId, trip);
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error reading trips from " + path + ": " + e.getMessage());
+                    }
+                }))
+                .toList();
 
-                for (Trip trip : readCSV(path, row -> {
-                    Route route = routes.get(row[1]);
-                    return new Trip(row[0], route);
-                })) {
-                    trips.put(trip.tripId, trip);
-                    tripCount++;
-                }
-            } catch (Exception e) {
-                System.err.println("Error reading trips from " + path + ": " + e.getMessage());
-            }
-        }
-
-        System.out.println("Loaded " + tripCount + " trips");
+        futures.forEach(CompletableFuture::join);
+        System.out.println("Loaded " + trips.size() + " trips");
         return trips;
     }
+
 
     public interface FromCSV<T> {
         T fromCSV(String[] row);
