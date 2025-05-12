@@ -3,6 +3,8 @@ package algo.transit.services;
 import algo.transit.models.common.Route;
 import algo.transit.models.common.Stop;
 import algo.transit.models.common.Trip;
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,9 +16,6 @@ import java.nio.file.Path;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-
-import com.univocity.parsers.csv.CsvParser;
-import com.univocity.parsers.csv.CsvParserSettings;
 
 public class CSVService {
     public static final Path[] DefaultRoutesPaths = new Path[]{
@@ -74,21 +73,11 @@ public class CSVService {
     }
 
     public static LocalTime checkTime(@NotNull String time) {
-        String[] timeArr = time.split(":");
+        int hour = (time.charAt(0) - '0') * 10 + (time.charAt(1) - '0');
+        int minute = (time.charAt(3) - '0') * 10 + (time.charAt(4) - '0');
+        int second = (time.charAt(6) - '0') * 10 + (time.charAt(7) - '0');
 
-        if (timeArr.length != 3) throw new IllegalArgumentException("Invalid time format: " + time);
-
-        int hour = Integer.parseInt(timeArr[0]);
-        int minute = Integer.parseInt(timeArr[1]);
-        int second = Integer.parseInt(timeArr[2]);
-
-        // Handle hour values > 23 properly
-        if (hour > 23) {
-            // For GTFS, hours can be >24 to represent service past midnight
-            // We'll standardize to 0-23 for simplicity
-            hour %= 24;
-        }
-
+        if (hour > 23) hour %= 24;
         if (minute > 59) minute %= 60;
         if (second > 59) second %= 60;
 

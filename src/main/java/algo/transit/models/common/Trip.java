@@ -51,9 +51,9 @@ public class Trip {
         times.set(stopSequence, time);
 
         if (route != null) {
-            route.possibleStops.add(stop);
-            stop.routes.put(route.routeId, route);
-            stop.trips.put(tripId, this);
+            route.possibleStops.add(stop);         // 3rd biggest bottleneck
+            stop.routes.put(route.routeId, route); // 2nd biggest bottleneck
+            stop.trips.put(tripId, this);          // biggest bottleneck
         }
     }
 
