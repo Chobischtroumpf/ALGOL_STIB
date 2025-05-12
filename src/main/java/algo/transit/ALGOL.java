@@ -28,10 +28,23 @@ public class ALGOL {
             if (cmdArgs.arriveBy) System.out.println("Mode: Arrive by (paths calculated to arrive at specified time)");
 
             long loadStartTime = System.currentTimeMillis();
+
+            long start = System.currentTimeMillis();
             Map<String, Route> routes = csvService.getRoutes();
+            System.out.println("Routes loaded in " + (System.currentTimeMillis() - start) + " ms");
+
+            start = System.currentTimeMillis();
             Map<String, Stop> stops = csvService.getStops();
+            System.out.println("Stops loaded in " + (System.currentTimeMillis() - start) + " ms");
+
+            start = System.currentTimeMillis();
             Map<String, Trip> trips = csvService.getTrips(routes);
+            System.out.println("Trips loaded in " + (System.currentTimeMillis() - start) + " ms");
+
+            start = System.currentTimeMillis();
             csvService.linkData(stops, trips);
+            System.out.println("Linking data took " + (System.currentTimeMillis() - start) + " ms");
+
             long loadTime = System.currentTimeMillis() - loadStartTime;
             System.out.println("Data loading time: " + (loadTime / 1000.0) + " seconds");
 
