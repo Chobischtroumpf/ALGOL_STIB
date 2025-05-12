@@ -3,9 +3,6 @@ package algo.transit.services;
 import algo.transit.models.common.Route;
 import algo.transit.models.common.Stop;
 import algo.transit.models.common.Trip;
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvException;
-import com.opencsv.exceptions.CsvValidationException;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,6 +16,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
 
 public class CSVService {
     public static final Path[] DefaultRoutesPaths = new Path[]{
@@ -70,7 +70,7 @@ public class CSVService {
     ) {
         try {
             return new CSVIterator<>(filePath, converter);
-        } catch (IOException | CsvException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -188,7 +188,6 @@ public class CSVService {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
                 System.err.println("Error reading stop times from " + path + ": " + e.getMessage());
             }
         }
@@ -225,32 +224,40 @@ public class CSVService {
     }
 
     public static class CSVIterator<T> implements Iterator<T>, Iterable<T>, AutoCloseable {
-        public final FromCSV<T> converter;
-        public final CSVReader reader;
-        public String[] next = null;
+        private final FromCSV<T> converter;
+        private final CsvParser parser;
+        private final BufferedReader reader;
+        private String[] next = null;
 
         public CSVIterator(
                 @NotNull Path filePath,
                 FromCSV<T> converter
-        ) throws IOException, CsvException {
+        ) throws IOException {
             this.converter = converter;
-            this.reader = new CSVReader(new BufferedReader(new FileReader(filePath.toString()), 8192 * 64));
-            reader.readNextSilently(); // Discard header
+            this.reader = new BufferedReader(new FileReader(filePath.toString()), 8192 * 64);
+
+            // Configure parser settings
+            CsvParserSettings settings = new CsvParserSettings();
+            settings.setLineSeparatorDetectionEnabled(true);
+            settings.setHeaderExtractionEnabled(true);  // Skip header row
+            settings.setMaxCharsPerColumn(-1);  // No limit on column length
+
+            // Create parser with settings
+            this.parser = new CsvParser(settings);
+            this.parser.beginParsing(reader);
         }
 
         @Override
         public void close() throws Exception {
+            parser.stopParsing();
             reader.close();
         }
 
         @Override
         public boolean hasNext() {
             if (next != null) return true;
-            try {
-                return (next = reader.readNext()) != null;
-            } catch (IOException | CsvValidationException e) {
-                throw new RuntimeException(e);
-            }
+            next = parser.parseNext();
+            return next != null;
         }
 
         @Override
