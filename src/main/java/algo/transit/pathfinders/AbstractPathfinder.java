@@ -58,7 +58,6 @@ public abstract class AbstractPathfinder {
             LocalTime currentTime,
             @NotNull Connection connection,
             String lastMode,
-            int currentDayOffset,
             @NotNull TPreference preferences
     ) {
         long waitingMinutes = calculateMinutesBetween(

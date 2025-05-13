@@ -119,8 +119,8 @@ public class DPathfinder extends AbstractPathfinder {
                         current.time,
                         connection,
                         current.lastMode,
-                        current.dayOffset,
-                        preferences);
+                        preferences
+                );
 
                 if (transitionCost < 0) continue;
 
@@ -253,8 +253,7 @@ public class DPathfinder extends AbstractPathfinder {
                     currentStop.stopId,
                     nearbyStop.stopId,
                     current.time,
-                    walkingTimeMinutes,
-                    current.dayOffset
+                    walkingTimeMinutes
             ));
         }
     }
