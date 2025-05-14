@@ -36,7 +36,7 @@
     </build>
 
     <dependencies>
-        <!-- Univocity Parsers instead of OpenCSV -->
+        <!-- Univocity Parsers - the best of the best -->
         <dependency>
             <groupId>com.univocity</groupId>
             <artifactId>univocity-parsers</artifactId>
