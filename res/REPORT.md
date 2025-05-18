@@ -113,7 +113,7 @@ optimizations:
 
 #### 3.6.1 FastCSV Implementation
 
-We replaced our previous parsing library with Univocity Parsers, a high-performance CSV parsing library that
+We replaced our previous parsing library with [Univocity Parsers](https://github.com/uniVocity/univocity-parsers), a high-performance CSV parsing library that
 significantly reduced processing overhead. This change alone improved parsing speed by approximately 15%.
 
 #### 3.6.2 Asynchronous Multi-threaded Processing
