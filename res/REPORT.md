@@ -544,7 +544,7 @@ We employ two primary pruning strategies that preserve optimality:
 
 1. **Temporal pruning**: Eliminates connections with unreasonable waiting times (>3-4 hours during daytime)
 2. **Spatial pruning**: Ignores transitions that don't bring us closer to the target, using the formula:
-   $$\text{distance}(\text{next_stop}, \text{target}) < \delta \times \text{distance}(\text{current_stop}, \text{target})$$
+   $$\text{distance}(\text{nextstop}, \text{target}) < \delta \times \text{distance}(\text{currentstop}, \text{target})$$
 
 The deviation tolerance $\delta = 1.25$ allows sufficient flexibility while eliminating geographically implausible
 detours. This preserves optimality because any eliminated connection would require a geographic detour exceeding 25% of
