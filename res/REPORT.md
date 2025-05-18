@@ -255,23 +255,6 @@ query).
 
 For Belgium's transit network with 67,635 stops, this makes walking connection generation computationally feasible.
 
-### 4.2 System Architecture Overview
-
-The diagram below illustrates the overall system architecture and the interactions between major components:
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ GTFS Data Files │────▶│ CSV Parser      │────▶│ Memory Model    │
-└─────────────────┘     │ (Iterator-based)│     │ (Stops, Trips)  │
-                        └─────────────────┘     └────────┬────────┘
-                                                         │
-                                                         ▼
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ User Interface  │◀───▶│ Pathfinder      │◀───▶│ Spatial Index   │
-│ (OpenGL)        │     │ (Dijkstra)      │     │ (QuadTree)      │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-```
-
 ## 5. Dijkstra-Based Time-Aware Pathfinder
 
 ### 5.1 Why This Algorithm Works
