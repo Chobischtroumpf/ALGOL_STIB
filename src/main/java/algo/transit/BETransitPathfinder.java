@@ -18,7 +18,7 @@ import java.util.Map;
 
 import static algo.transit.utils.PathPrinter.printPath;
 
-public class ALGOL {
+public class BETransitPathfinder {
     public static void main(String[] args) {
         try {
             CLArgs cmdArgs = CLParser.parseCommandLineArgs(args);

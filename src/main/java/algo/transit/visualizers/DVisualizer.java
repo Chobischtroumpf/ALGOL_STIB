@@ -52,7 +52,7 @@ public class DVisualizer extends JFrame implements GLEventListener {
     private double minLat, maxLat, minLon, maxLon;
 
     public DVisualizer(Map<String, Stop> stops) {
-        super("ALGOL Pathfinder Visualizer");
+        super("BETransitPathfinder Pathfinder Visualizer");
         this.stops = stops;
 
         // Create OpenGL capabilities profile

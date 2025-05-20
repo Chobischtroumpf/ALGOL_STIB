@@ -18,7 +18,7 @@ mvn clean compile
 To run the application with Maven:
 
 ```bash
-mvn exec:java -Dexec.mainClass="algo.transit.ALGOL" -Dexec.args="[arguments]"
+mvn exec:java -Dexec.mainClass="algo.transit.BETransitPathfinder" -Dexec.args="[arguments]"
 ```
 
 Replace `[arguments]` with the appropriate command-line arguments (see below).
@@ -26,7 +26,7 @@ Replace `[arguments]` with the appropriate command-line arguments (see below).
 Alternatively, after compiling, you can run the application directly with Java:
 
 ```bash
-java -cp target/classes algo.transit.ALGOL [arguments]
+java -cp target/classes algo.transit.BETransitPathfindernsitPathfinder [arguments]
 ```
 
 ### Command-Line Arguments
