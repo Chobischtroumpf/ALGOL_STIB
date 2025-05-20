@@ -1,3 +1,5 @@
+[![BETransitPathfinder Release](https://github.com/Chobischtroumpf/BETransitPathfinder/actions/workflows/release.yml/badge.svg)](https://github.com/Chobischtroumpf/BETransitPathfinder/actions/workflows/release.yml)
+
 ## Requirements
 
 - Java 17 or higher (project uses Java 23 features if available)
