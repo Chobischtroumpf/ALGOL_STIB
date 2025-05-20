@@ -20,5 +20,3 @@ src/test/resources/testStopTimes.csv filter=lfs diff=lfs merge=lfs -text
 src/test/resources/testStops.csv filter=lfs diff=lfs merge=lfs -text
 src/test/resources/testTrip.csv filter=lfs diff=lfs merge=lfs -text
 src/main/resources/GTFS filter=lfs diff=lfs merge=lfs -text
-
-*.jar filter=lfs diff=lfs merge=lfs -text
