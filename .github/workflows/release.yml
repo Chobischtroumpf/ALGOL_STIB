@@ -1,4 +1,4 @@
-name: BETransitPathfinder Release
+name: Release
 
 on:
     push:
