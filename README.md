@@ -1,4 +1,4 @@
-[![BETransitPathfinder Release](https://github.com/Chobischtroumpf/BETransitPathfinder/actions/workflows/release.yml/badge.svg)](https://github.com/Chobischtroumpf/BETransitPathfinder/actions/workflows/release.yml)
+[![Release](https://github.com/Chobischtroumpf/BETransitPathfinder/actions/workflows/release.yml/badge.svg)](https://github.com/Chobischtroumpf/BETransitPathfinder/actions/workflows/release.yml)
 
 ## Requirements
 
