@@ -1,28 +1,20 @@
 package algo.transit.models.pathfinder;
 
 import algo.transit.enums.TType;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TPreference {
-    public double walkingSpeed;
-    public double maxWalkingTime;
-    public Map<TType, Double> modeWeights;
-    public List<TType> forbiddenModes;
-    public String optimizationGoal;
-
-    public TPreference(
-            double walkingSpeed,
-            double maxWalkingTime,
-            Map<TType, Double> modeWeights,
-            List<TType> forbiddenModes,
-            String optimizationGoal
-    ) {
-        this.walkingSpeed = walkingSpeed;
-        this.maxWalkingTime = maxWalkingTime;
-        this.modeWeights = modeWeights;
-        this.forbiddenModes = forbiddenModes;
-        this.optimizationGoal = optimizationGoal;
-    }
+    private double walkingSpeed;
+    private double maxWalkingTime;
+    private Map<TType, Double> modeWeights;
+    private List<TType> forbiddenModes;
+    private String optimizationGoal;
 }

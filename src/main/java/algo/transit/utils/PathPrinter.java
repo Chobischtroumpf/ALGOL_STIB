@@ -61,8 +61,8 @@ public class PathPrinter {
         Transition firstTransition = path.getFirst();
         Transition lastTransition = path.getLast();
 
-        System.out.println("From: " + stops.get(firstTransition.fromStop()).name);
-        System.out.println("To: " + stops.get(lastTransition.toStop()).name);
+        System.out.println("From: " + stops.get(firstTransition.fromStop()).getName());
+        System.out.println("To: " + stops.get(lastTransition.toStop()).getName());
         System.out.println("Departure: " + firstTransition.departure());
         System.out.println("Arrival: " + lastTransition.arrival() + (dayDifference > 0 ? " (+1 day)" : ""));
         System.out.println("Total travel time: " + formatDuration(totalMinutes) + (dayDifference > 0 ? " (+1 day)" : ""));
@@ -90,9 +90,9 @@ public class PathPrinter {
 
             System.out.println((i + 1) + ". " + currentMode +
                     (currentRoute.isEmpty() ? "" : " " + currentRoute) +
-                    " from " + fromStop.name +
+                    " from " + fromStop.getName() +
                     " (" + current.departure() + ") to " +
-                    toStop.name + " (" + path.get(j).arrival() + ")");
+                    toStop.getName() + " (" + path.get(j).arrival() + ")");
 
             // Move index to next segment
             i = j + 1;
@@ -110,8 +110,8 @@ public class PathPrinter {
     ) {
         System.out.println("Route Summary:");
         System.out.println("--------------");
-        System.out.println("From: " + stops.get(path.getFirst().fromStop()).name);
-        System.out.println("To: " + stops.get(path.getLast().toStop()).name);
+        System.out.println("From: " + stops.get(path.getFirst().fromStop()).getName());
+        System.out.println("To: " + stops.get(path.getLast().toStop()).getName());
         System.out.println("Departure: " + path.getFirst().departure());
         System.out.println("Arrival: " + path.getLast().arrival() + (dayDifference > 0 ? " (+1 day)" : ""));
         System.out.println("Travel time: " + formatDuration(totalMinutes) + (dayDifference > 0 ? " (+1 day)" : ""));
@@ -168,8 +168,8 @@ public class PathPrinter {
             Stop toStop = stops.get(transition.toStop());
             if (fromStop != null && toStop != null) {
                 double distance = QuadTree.calculateDistance(
-                        fromStop.latitude, fromStop.longitude,
-                        toStop.latitude, toStop.longitude
+                        fromStop.getLatitude(), fromStop.getLongitude(),
+                        toStop.getLatitude(), toStop.getLongitude()
                 );
                 modeDistance.put(mode, modeDistance.getOrDefault(mode, 0L) + Math.round(distance));
             }

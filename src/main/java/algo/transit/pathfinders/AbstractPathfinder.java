@@ -5,7 +5,6 @@ import algo.transit.models.common.Stop;
 import algo.transit.models.pathfinder.Connection;
 import algo.transit.models.pathfinder.TPreference;
 import algo.transit.models.pathfinder.Transition;
-import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.utils.QuadTree;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,9 +23,6 @@ public abstract class AbstractPathfinder {
 
     protected final Map<String, Stop> stops;
     protected final QuadTree stopQuadTree;
-
-    // Recorder for visualizing the pathfinding process
-    public StateRecorder recorder;
 
     protected AbstractPathfinder(Map<String, Stop> stops) {
         this.stops = stops;
@@ -70,7 +66,7 @@ public abstract class AbstractPathfinder {
                 connection.arrivalTime().isBefore(connection.departureTime()) ? 1 : 0);
 
         double cost;
-        String goal = preferences.optimizationGoal;
+        String goal = preferences.getOptimizationGoal();
 
         if (goal == null || goal.isEmpty() || goal.equalsIgnoreCase("time")) {
             // Half penalty for waiting
@@ -92,7 +88,7 @@ public abstract class AbstractPathfinder {
 
         // Apply mode-specific weights
         TType mode = TType.fromString(connection.mode());
-        Double modeWeight = preferences.modeWeights.get(mode);
+        Double modeWeight = preferences.getModeWeights().get(mode);
         if (modeWeight != null) {
             // Only apply weight to the transit time, not the waiting time
             if (goal != null && goal.equalsIgnoreCase("transfers")) {
@@ -135,13 +131,13 @@ public abstract class AbstractPathfinder {
     ) {
         // Calculate current and next distances to target
         double currentDistance = QuadTree.calculateDistance(
-                currentStop.latitude, currentStop.longitude,
-                targetStop.latitude, targetStop.longitude
+                currentStop.getLatitude(), currentStop.getLongitude(),
+                targetStop.getLatitude(), targetStop.getLongitude()
         );
 
         double nextDistance = QuadTree.calculateDistance(
-                nextStop.latitude, nextStop.longitude,
-                targetStop.latitude, targetStop.longitude
+                nextStop.getLatitude(), nextStop.getLongitude(),
+                targetStop.getLatitude(), targetStop.getLongitude()
         );
 
         // Skip if we're moving significantly away from the target
@@ -152,8 +148,8 @@ public abstract class AbstractPathfinder {
 
         // Calculate direct distance between stops
         double segmentDistance = QuadTree.calculateDistance(
-                currentStop.latitude, currentStop.longitude,
-                nextStop.latitude, nextStop.longitude
+                currentStop.getLatitude(), currentStop.getLongitude(),
+                nextStop.getLatitude(), nextStop.getLongitude()
         );
 
         // If this is a very short segment, always allow it
@@ -198,16 +194,16 @@ public abstract class AbstractPathfinder {
         if (fromStop == null || toStop == null) return baseTime;
 
         double distance = QuadTree.calculateDistance(
-                fromStop.latitude, fromStop.longitude,
-                toStop.latitude, toStop.longitude
+                fromStop.getLatitude(), fromStop.getLongitude(),
+                toStop.getLatitude(), toStop.getLongitude()
         );
 
         double transferTime = baseTime + (distance / 100.0);
 
         // Station complexity factor based on number of routes
         // More routes = more complex station = more transfer time
-        int fromRoutes = fromStop.routes.size();
-        int toRoutes = toStop.routes.size();
+        int fromRoutes = fromStop.getRoutes().size();
+        int toRoutes = toStop.getRoutes().size();
 
         if (fromRoutes > 5 || toRoutes > 5) {
             transferTime += 2.0;

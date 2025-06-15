@@ -5,13 +5,11 @@ import algo.transit.models.common.Stop;
 import algo.transit.models.common.Trip;
 import algo.transit.models.pathfinder.TPreference;
 import algo.transit.models.pathfinder.Transition;
-import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.pathfinders.DPathfinder;
 import algo.transit.services.CSVService;
+import algo.transit.utils.CLArgs;
 import algo.transit.utils.CLParser;
-import algo.transit.utils.CLParser.CLArgs;
 import algo.transit.utils.QuadTree;
-import algo.transit.visualizers.DVisualizer;
 
 import java.util.List;
 import java.util.Map;
@@ -24,8 +22,8 @@ public class BETransitPathfinder {
             CLArgs cmdArgs = CLParser.parseCommandLineArgs(args);
             CSVService csvService = new CSVService();
 
-            System.out.println("Finding path from " + cmdArgs.startStop + " to " + cmdArgs.endStop + " at " + cmdArgs.startTime);
-            if (cmdArgs.arriveBy) System.out.println("Mode: Arrive by (paths calculated to arrive at specified time)");
+            System.out.println("Finding path from " + cmdArgs.getStartStop() + " to " + cmdArgs.getEndStop() + " at " + cmdArgs.getStartTime());
+            if (cmdArgs.isArriveBy()) System.out.println("Mode: Arrive by (paths calculated to arrive at specified time)");
 
             long loadStartTime = System.currentTimeMillis();
 
@@ -48,23 +46,23 @@ public class BETransitPathfinder {
             long loadTime = System.currentTimeMillis() - loadStartTime;
             System.out.println("Data loading time: " + (loadTime / 1000.0) + " seconds");
 
-            Stop startStop = stops.get(cmdArgs.startStop);
-            Stop endStop = stops.get(cmdArgs.endStop);
+            Stop startStop = stops.get(cmdArgs.getStartStop());
+            Stop endStop = stops.get(cmdArgs.getEndStop());
 
             if (startStop != null && endStop != null) {
                 double distance = QuadTree.calculateDistance(
-                        startStop.latitude, startStop.longitude,
-                        endStop.latitude, endStop.longitude
+                        startStop.getLatitude(), startStop.getLongitude(),
+                        endStop.getLatitude(), endStop.getLongitude()
                 );
                 System.out.println("Distance between stops: " + distance + " meters");
             }
 
             TPreference preferences = new TPreference(
-                    cmdArgs.walkingSpeed,
-                    cmdArgs.maxWalkTime,
-                    cmdArgs.modeWeights,
-                    cmdArgs.forbiddenModes,
-                    cmdArgs.optimizationGoal
+                    cmdArgs.getWalkingSpeed(),
+                    cmdArgs.getMaxWalkTime(),
+                    cmdArgs.getModeWeights(),
+                    cmdArgs.getForbiddenModes(),
+                    cmdArgs.getOptimizationGoal()
             );
 
             DPathfinder dPathfinder = new DPathfinder(stops);
@@ -72,29 +70,18 @@ public class BETransitPathfinder {
             long startTime = System.currentTimeMillis();
             List<Transition> path;
 
-            if (cmdArgs.arriveBy) {
+            if (cmdArgs.isArriveBy()) {
                 // TODO: Implement reverse pathfinding
                 System.out.println("Arrive-by mode not yet implemented. Using departure time instead.");
-                path = dPathfinder.findPath(cmdArgs.startStop, cmdArgs.endStop, cmdArgs.startTime, preferences);
+                path = dPathfinder.findPath(cmdArgs.getStartStop(), cmdArgs.getEndStop(), cmdArgs.getStartTime(), preferences);
             } else {
-                path = dPathfinder.findPath(cmdArgs.startStop, cmdArgs.endStop, cmdArgs.startTime, preferences);
+                path = dPathfinder.findPath(cmdArgs.getStartStop(), cmdArgs.getEndStop(), cmdArgs.getStartTime(), preferences);
             }
 
             long executionTime = System.currentTimeMillis() - startTime;
 
             System.out.println("Pathfinding time: " + (executionTime / 1000.0) + " seconds");
-            printPath(path, cmdArgs.outputFormat, cmdArgs.showStats, stops);
-
-            if (cmdArgs.visualize) {
-                StateRecorder recorder = dPathfinder.recorder;
-
-                DVisualizer visualizer = new DVisualizer(stops);
-                visualizer.setAlgorithmData(recorder);
-                visualizer.setVisible(true);
-
-                System.out.println("Visualization window is open. Close it to exit the program.");
-                visualizer.waitForCompletion();
-            }
+            printPath(path, cmdArgs.getOutputFormat(), cmdArgs.isShowStats(), stops);
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();

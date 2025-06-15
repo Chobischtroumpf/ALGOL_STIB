@@ -1,41 +1,26 @@
 package algo.transit.models.common;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
+@Data
+@EqualsAndHashCode(of = "stopId")
 public class Stop {
-    public final String stopId;
-    public final String name;
-    public final double latitude;
-    public final double longitude;
-    public final Map<String, Route> routes;
-    public final Map<String, Trip> trips;
+    String stopId;
+    String name;
+    double latitude;
+    double longitude;
 
-    public Stop(
-            String stopId,
-            String name,
-            double latitude,
-            double longitude
-    ) {
+    Map<String, Route> routes = new HashMap<>();
+    Map<String, Trip> trips = new HashMap<>();
+
+    public Stop(String stopId, String name, double latitude, double longitude) {
         this.stopId = stopId;
         this.name = name;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.routes = new HashMap<>();
-        this.trips = new HashMap<>();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Stop stop = (Stop) obj;
-        return Objects.equals(stopId, stop.stopId);
-    }
-
-    @Override
-    public int hashCode() {
-        return stopId != null ? stopId.hashCode() : 0;
     }
 }

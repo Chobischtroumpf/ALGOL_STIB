@@ -74,7 +74,7 @@ public class QuadTree {
         if (!intersectsRadius(lat, lon, radius)) return result;
 
         for (Stop stop : points) {
-            if (calculateDistance(lat, lon, stop.latitude, stop.longitude) <= radius) result.add(stop);
+            if (calculateDistance(lat, lon, stop.getLatitude(), stop.getLongitude()) <= radius) result.add(stop);
         }
 
         if (children != null) {
@@ -86,7 +86,7 @@ public class QuadTree {
 
     @Contract(pure = true)
     private boolean inBounds(@NotNull Stop stop) {
-        return stop.longitude >= minX && stop.longitude <= maxX && stop.latitude >= minY && stop.latitude <= maxY;
+        return stop.getLongitude() >= minX && stop.getLongitude() <= maxX && stop.getLatitude() >= minY && stop.getLatitude() <= maxY;
     }
 
     private void split() {

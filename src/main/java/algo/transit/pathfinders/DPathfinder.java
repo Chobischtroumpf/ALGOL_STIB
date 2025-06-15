@@ -7,7 +7,6 @@ import algo.transit.models.common.Trip;
 import algo.transit.models.pathfinder.Connection;
 import algo.transit.models.pathfinder.TPreference;
 import algo.transit.models.pathfinder.Transition;
-import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.utils.QuadTree;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -69,9 +68,6 @@ public class DPathfinder extends AbstractPathfinder {
             LocalTime startTime,
             TPreference preferences
     ) {
-        recorder = new StateRecorder();
-        recorder.setStartAndEndStops(startStopId, endStopId);
-
         Stop startStop = stops.get(startStopId);
         Stop endStop = stops.get(endStopId);
 
@@ -96,15 +92,12 @@ public class DPathfinder extends AbstractPathfinder {
             iterations++;
             DijkstraState current = priorityQueue.poll();
 
-            recorder.recordExploredState(current.stopId);
-
             // Log progress periodically
             if (iterations % 1000 == 0) System.out.println("Iteration: " + iterations + " " + current);
 
             // If we've reached the destination, return the path
             if (current.stopId.equals(endStopId)) {
                 System.out.println("Path found in " + iterations + " iterations");
-                recorder.recordFinalPath(current.path);
                 return current.path;
             }
 
@@ -162,10 +155,10 @@ public class DPathfinder extends AbstractPathfinder {
     ) {
         LocalTime currentTime = current.time;
 
-        for (Trip trip : currentStop.trips.values()) {
+        for (Trip trip : currentStop.getTrips().values()) {
             Route route = trip.getRoute();
             if (route == null) continue;
-            if (preferences.forbiddenModes.contains(route.type)) continue;
+            if (preferences.getForbiddenModes().contains(route.getType())) continue;
 
             LocalTime tripStopTime = trip.getTimeForStop(currentStop);
 
@@ -181,7 +174,7 @@ public class DPathfinder extends AbstractPathfinder {
 
             // Find current stop index
             for (int i = 0; i < tripStops.size(); i++) {
-                if (tripStops.get(i).stopId.equals(currentStop.stopId)) {
+                if (tripStops.get(i).getStopId().equals(currentStop.getStopId())) {
                     currentStopIndex = i;
                     break;
                 }
@@ -198,20 +191,20 @@ public class DPathfinder extends AbstractPathfinder {
                 LocalTime nextStopTime = trip.getTimeForStop(nextStop);
 
                 // Direction-based pruning - skip if moving away from target
-                if (!isWorthExploring(currentStop, nextStop, stops.get(targetStop.stopId))) continue;
+                if (!isWorthExploring(currentStop, nextStop, stops.get(targetStop.getStopId()))) continue;
 
                 if (nextStopTime != null && (isAfter(nextStopTime, tripStopTime) ||
                         (nextStopTime.equals(tripStopTime) && i > currentStopIndex))) {
 
                     connections.add(new Connection(
-                            currentStop.stopId,
-                            nextStop.stopId,
-                            trip.tripId,
-                            route.routeId,
-                            route.shortName,
+                            currentStop.getStopId(),
+                            nextStop.getStopId(),
+                            trip.getTripId(),
+                            route.getRouteId(),
+                            route.getShortName(),
                             tripStopTime,
                             nextStopTime,
-                            route.type.toString()
+                            route.getType().toString()
                     ));
                 }
             }
@@ -224,34 +217,34 @@ public class DPathfinder extends AbstractPathfinder {
             Stop currentStop,
             @NotNull TPreference preferences
     ) {
-        if (preferences.forbiddenModes.contains(TType.FOOT)) return;
+        if (preferences.getForbiddenModes().contains(TType.FOOT)) return;
 
         // Find nearby stops within walking distance
-        double maxWalkingDistance = preferences.walkingSpeed * preferences.maxWalkingTime;
+        double maxWalkingDistance = preferences.getWalkingSpeed() * preferences.getMaxWalkingTime();
         List<Stop> nearbyStops = stopQuadTree.findNearby(
-                currentStop.latitude,
-                currentStop.longitude,
+                currentStop.getLatitude(),
+                currentStop.getLongitude(),
                 maxWalkingDistance
         );
 
         for (Stop nearbyStop : nearbyStops) {
             // Skip if from and to are the same stop or refer to same physical location
-            if (nearbyStop.stopId.equals(currentStop.stopId) || nearbyStop.name.equals(currentStop.name)) continue;
+            if (nearbyStop.getStopId().equals(currentStop.getStopId()) || nearbyStop.getName().equals(currentStop.getName())) continue;
 
             // Calculate walking time
             double distance = QuadTree.calculateDistance(
-                    currentStop.latitude, currentStop.longitude,
-                    nearbyStop.latitude, nearbyStop.longitude
+                    currentStop.getLatitude(), currentStop.getLongitude(),
+                    nearbyStop.getLatitude(), nearbyStop.getLongitude()
             );
 
-            int walkingTimeMinutes = (int) Math.ceil(distance / preferences.walkingSpeed);
+            int walkingTimeMinutes = (int) Math.ceil(distance / preferences.getWalkingSpeed());
 
             // Skip if it takes too long to walk
-            if (walkingTimeMinutes > preferences.maxWalkingTime) continue;
+            if (walkingTimeMinutes > preferences.getMaxWalkingTime()) continue;
 
             connections.add(Connection.createWalkingConnection(
-                    currentStop.stopId,
-                    nearbyStop.stopId,
+                    currentStop.getStopId(),
+                    nearbyStop.getStopId(),
                     current.time,
                     walkingTimeMinutes
             ));

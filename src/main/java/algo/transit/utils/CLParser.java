@@ -6,10 +6,6 @@ import org.jetbrains.annotations.NotNull;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class CLParser {
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
@@ -40,11 +36,11 @@ public class CLParser {
             System.exit(0);
         }
 
-        cmdArgs.startStop = args[0];
-        cmdArgs.endStop = args[1];
+        cmdArgs.setStartStop(args[0]);
+        cmdArgs.setEndStop(args[1]);
 
         try {
-            cmdArgs.startTime = LocalTime.parse(args[2], TIME_FORMATTER);
+            cmdArgs.setStartTime(LocalTime.parse(args[2], TIME_FORMATTER));
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException("Invalid time format. Use HH:MM format (e.g., 08:00)");
         }
@@ -57,14 +53,14 @@ public class CLParser {
                 switch (arg) {
                     case "--walking-speed" -> {
                         if (i + 1 < args.length) {
-                            cmdArgs.walkingSpeed = Double.parseDouble(args[++i]);
+                            cmdArgs.setWalkingSpeed(Double.parseDouble(args[++i]));
                         } else {
                             throw new IllegalArgumentException("Missing value for --walking-speed");
                         }
                     }
                     case "--max-walk-time" -> {
                         if (i + 1 < args.length) {
-                            cmdArgs.maxWalkTime = Double.parseDouble(args[++i]);
+                            cmdArgs.setMaxWalkTime(Double.parseDouble(args[++i]));
                         } else {
                             throw new IllegalArgumentException("Missing value for --max-walk-time");
                         }
@@ -75,7 +71,7 @@ public class CLParser {
                         }
                         while (i + 1 < args.length && !args[i + 1].startsWith("--")) {
                             try {
-                                cmdArgs.forbiddenModes.add(TType.valueOf(args[++i]));
+                                cmdArgs.getForbiddenModes().add(TType.valueOf(args[++i]));
                             } catch (IllegalArgumentException e) {
                                 System.err.println("Invalid transport type: " + args[i] + ". Skipping.");
                             }
@@ -90,7 +86,7 @@ public class CLParser {
                             String[] parts = weightSpec.split(":");
                             if (parts.length == 2) {
                                 try {
-                                    cmdArgs.modeWeights.put(TType.valueOf(parts[0]), Double.parseDouble(parts[1]));
+                                    cmdArgs.getModeWeights().put(TType.valueOf(parts[0]), Double.parseDouble(parts[1]));
                                 } catch (NumberFormatException e) {
                                     System.err.println("Invalid weight format: " + weightSpec + ". Expected format: mode:weight");
                                 } catch (IllegalArgumentException e) {
@@ -101,16 +97,16 @@ public class CLParser {
                             }
                         }
                     }
-                    case "--arrive-by" -> cmdArgs.arriveBy = true;
+                    case "--arrive-by" -> cmdArgs.setArriveBy(true);
                     case "--optimization-goal" -> {
                         if (i + 1 < args.length) {
                             String goal = args[++i].toLowerCase();
                             if (goal.equals("time") || goal.equals("transfers") || goal.equals("walking")) {
-                                cmdArgs.optimizationGoal = goal;
+                                cmdArgs.setOptimizationGoal(goal);
                             } else {
                                 System.err.println("Invalid optimization goal: " + goal +
                                         ". Using default (time). Valid options: time, transfers, walking");
-                                cmdArgs.optimizationGoal = "time";
+                                cmdArgs.setOptimizationGoal("time");
                             }
                         } else {
                             throw new IllegalArgumentException("Missing value for --optimization-goal");
@@ -120,17 +116,17 @@ public class CLParser {
                         if (i + 1 < args.length) {
                             String format = args[++i].toLowerCase();
                             if (format.equals("detailed") || format.equals("summary")) {
-                                cmdArgs.outputFormat = format;
+                                cmdArgs.setOutputFormat(format);
                             } else {
                                 System.err.println("Invalid output format: " + format +
                                         ". Using default (detailed). Valid options: detailed, summary");
-                                cmdArgs.outputFormat = "detailed";
+                                cmdArgs.setOutputFormat("detailed");
                             }
                         } else {
                             throw new IllegalArgumentException("Missing value for --output-format");
                         }
                     }
-                    case "--show-stats" -> cmdArgs.showStats = true;
+                    case "--show-stats" -> cmdArgs.setShowStats(true);
                     case "--help" -> {
                         printUsage();
                         System.exit(0);
@@ -143,19 +139,5 @@ public class CLParser {
         }
 
         return cmdArgs;
-    }
-
-    public static class CLArgs {
-        public String startStop;
-        public String endStop;
-        public LocalTime startTime;
-        public double walkingSpeed = 80.0;
-        public double maxWalkTime = 10.0;
-        public List<TType> forbiddenModes = new ArrayList<>();
-        public Map<TType, Double> modeWeights = new HashMap<>();
-        public boolean arriveBy = false;
-        public String optimizationGoal = "time";
-        public String outputFormat = "detailed";
-        public boolean showStats = false;
     }
 }

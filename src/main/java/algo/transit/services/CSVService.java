@@ -93,7 +93,7 @@ public class CSVService {
                         System.out.println("Reading routes from " + path);
                         for (Route route : readCSV(path, row -> new Route(row[0].intern(), row[1].intern(), row[2].intern(), row[3].intern()))) {
                             synchronized (routes) {
-                                routes.put(route.routeId, route);
+                                routes.put(route.getRouteId(), route);
                             }
                         }
                     } catch (Exception e) {
@@ -116,7 +116,7 @@ public class CSVService {
                         System.out.println("Reading stops from " + path);
                         for (Stop stop : readCSV(path, row -> new Stop(row[0].intern(), row[1].intern(), Double.parseDouble(row[2]), Double.parseDouble(row[3])))) {
                             synchronized (stops) {
-                                stops.put(stop.stopId, stop);
+                                stops.put(stop.getStopId(), stop);
                             }
                         }
                     } catch (Exception e) {
@@ -172,11 +172,11 @@ public class CSVService {
                                     trip.addStopTime(stopSequence, departureTime, stop);
                                 }
                                 synchronized (trip.getRoute()) {
-                                    trip.getRoute().possibleStops.add(stop);
+                                    trip.getRoute().getPossibleStops().add(stop);
                                 }
                                 synchronized (stop) {
-                                    stop.routes.put(trip.getRoute().routeId, trip.getRoute());
-                                    stop.trips.put(trip.tripId, trip);
+                                    stop.getRoutes().put(trip.getRoute().getRouteId(), trip.getRoute());
+                                    stop.getTrips().put(trip.getTripId(), trip);
                                 }
                                 count++;
                             }
@@ -204,7 +204,7 @@ public class CSVService {
                             return new Trip(row[0], route);
                         })) {
                             synchronized (trips) {
-                                trips.put(trip.tripId, trip);
+                                trips.put(trip.getTripId(), trip);
                             }
                         }
                     } catch (Exception e) {
