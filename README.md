@@ -2,8 +2,7 @@
 
 ## Requirements
 
-- Java 17 or higher (project uses Java 23 features if available)
-- Maven 3.6 or higher
+- Java 23 or higher
 
 ## Compilation
 
