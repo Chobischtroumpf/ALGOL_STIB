@@ -53,5 +53,4 @@ START_STOP END_STOP START_TIME [OPTIONS]
 - `--optimization-goal <goal>`: Set optimization goal: time|transfers|walking (default: time)
 - `--output-format <format>`: Set output format: detailed|summary (default: detailed)
 - `--show-stats`: Show detailed statistics about the found path
-- `--visualize`: Enable visualization of the pathfinding algorithm
 - `--help`: Display help message
