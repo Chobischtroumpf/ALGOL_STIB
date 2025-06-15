@@ -25,7 +25,6 @@ public class CLParser {
         System.out.println("  --optimization-goal <goal>   Set optimization goal: time|transfers|walking (default: time)");
         System.out.println("  --output-format <format>     Set output format: detailed|summary (default: detailed)");
         System.out.println("  --show-stats                 Show detailed statistics about the found path");
-        System.out.println("  --visualize                  Enable visualization of the pathfinding algorithm");
         System.out.println("  --help                       Display this help message");
     }
 
@@ -132,7 +131,6 @@ public class CLParser {
                         }
                     }
                     case "--show-stats" -> cmdArgs.showStats = true;
-                    case "--visualize" -> cmdArgs.visualize = true;
                     case "--help" -> {
                         printUsage();
                         System.exit(0);
@@ -155,7 +153,6 @@ public class CLParser {
         public double maxWalkTime = 10.0;
         public List<TType> forbiddenModes = new ArrayList<>();
         public Map<TType, Double> modeWeights = new HashMap<>();
-        public boolean visualize = false;
         public boolean arriveBy = false;
         public String optimizationGoal = "time";
         public String outputFormat = "detailed";
