@@ -7,6 +7,7 @@ import algo.transit.models.common.Trip;
 import algo.transit.models.pathfinder.Connection;
 import algo.transit.models.pathfinder.TPreference;
 import algo.transit.models.pathfinder.Transition;
+import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.utils.QuadTree;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -68,6 +69,9 @@ public class DPathfinder extends AbstractPathfinder {
             LocalTime startTime,
             TPreference preferences
     ) {
+        recorder = new StateRecorder();
+        recorder.setStartAndEndStops(startStopId, endStopId);
+
         Stop startStop = stops.get(startStopId);
         Stop endStop = stops.get(endStopId);
 
@@ -92,12 +96,15 @@ public class DPathfinder extends AbstractPathfinder {
             iterations++;
             DijkstraState current = priorityQueue.poll();
 
+            recorder.recordExploredState(current.stopId);
+
             // Log progress periodically
             if (iterations % 1000 == 0) System.out.println("Iteration: " + iterations + " " + current);
 
             // If we've reached the destination, return the path
             if (current.stopId.equals(endStopId)) {
                 System.out.println("Path found in " + iterations + " iterations");
+                recorder.recordFinalPath(current.path);
                 return current.path;
             }
 

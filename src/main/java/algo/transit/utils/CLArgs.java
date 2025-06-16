@@ -24,5 +24,5 @@ public class CLArgs {
     private String optimizationGoal = "time";
     private String outputFormat = "detailed";
     private boolean showStats = false;
-    private boolean visualize = false; // Added from BETransitPathfinder
+    private boolean visualize = false;
 }

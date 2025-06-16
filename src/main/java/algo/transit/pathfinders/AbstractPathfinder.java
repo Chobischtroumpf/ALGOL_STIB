@@ -5,6 +5,7 @@ import algo.transit.models.common.Stop;
 import algo.transit.models.pathfinder.Connection;
 import algo.transit.models.pathfinder.TPreference;
 import algo.transit.models.pathfinder.Transition;
+import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.utils.QuadTree;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,6 +24,9 @@ public abstract class AbstractPathfinder {
 
     protected final Map<String, Stop> stops;
     protected final QuadTree stopQuadTree;
+
+    // Recorder for visualizing the pathfinding process
+    public StateRecorder recorder;
 
     protected AbstractPathfinder(Map<String, Stop> stops) {
         this.stops = stops;

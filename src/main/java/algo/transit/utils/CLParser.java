@@ -21,6 +21,7 @@ public class CLParser {
         System.out.println("  --optimization-goal <goal>   Set optimization goal: time|transfers|walking (default: time)");
         System.out.println("  --output-format <format>     Set output format: detailed|summary (default: detailed)");
         System.out.println("  --show-stats                 Show detailed statistics about the found path");
+        System.out.println("  --visualize                  Enable visualization of the pathfinding algorithm");
         System.out.println("  --help                       Display this help message");
     }
 
@@ -127,6 +128,7 @@ public class CLParser {
                         }
                     }
                     case "--show-stats" -> cmdArgs.setShowStats(true);
+                    case "--visualize" -> cmdArgs.setVisualize(true);
                     case "--help" -> {
                         printUsage();
                         System.exit(0);

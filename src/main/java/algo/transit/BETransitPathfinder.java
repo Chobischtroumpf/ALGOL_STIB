@@ -5,11 +5,13 @@ import algo.transit.models.common.Stop;
 import algo.transit.models.common.Trip;
 import algo.transit.models.pathfinder.TPreference;
 import algo.transit.models.pathfinder.Transition;
+import algo.transit.models.visualizer.StateRecorder;
 import algo.transit.pathfinders.DPathfinder;
 import algo.transit.services.CSVService;
 import algo.transit.utils.CLArgs;
 import algo.transit.utils.CLParser;
 import algo.transit.utils.QuadTree;
+import algo.transit.visualizers.DVisualizer;
 
 import java.util.List;
 import java.util.Map;
@@ -82,6 +84,17 @@ public class BETransitPathfinder {
 
             System.out.println("Pathfinding time: " + (executionTime / 1000.0) + " seconds");
             printPath(path, cmdArgs.getOutputFormat(), cmdArgs.isShowStats(), stops);
+
+            if (cmdArgs.isVisualize()) {
+                StateRecorder recorder = dPathfinder.recorder;
+
+                DVisualizer visualizer = new DVisualizer(stops);
+                visualizer.setAlgorithmData(recorder);
+                visualizer.setVisible(true);
+
+                System.out.println("Visualization window is open. Close it to exit the program.");
+                visualizer.waitForCompletion();
+            }
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
